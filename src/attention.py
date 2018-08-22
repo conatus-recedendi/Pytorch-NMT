@@ -49,5 +49,5 @@ class Attention(nn.Module):
             energy = hidden.dot(energy)
         elif self.method == 'concat':
             energy = self.attention(torch.cat((hidden, encoder_output), 1))
-            energy = self.other.dor(energy)
+            energy = self.other.dot(energy)
         return energy
