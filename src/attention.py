@@ -34,11 +34,13 @@ class Attention(nn.Module):
         #  print('hidden: ', hidden.shape)
         #  print('encoder_outputs: ', encoder_outputs.shape)
 
-        seq_len = encoder_outputs.size(0)
-        energies = torch.zeros(seq_len).to(encoder_outputs.device)
-        for i in range(seq_len):
-            energies[i] = self._score(hidden, encoder_outputs[i])
-        return F.softmax(energies, dim=0).unsqueeze(0).unsqueeze(0)
+        batch_size, hidden_size = hidden.size()
+        enc_len, batch_size, _ = encoder_outputs.size()
+        energies = torch.zeros(batch_size, enc_len).to(encoder_outputs.device)
+        for bi in range(batch_size):
+            for li in range(enc_len):
+                energies[bi, li] = self._score(hidden[bi], encoder_outputs[li, bi, :])
+        return F.softmax(energies, dim=0).unsqueeze(1)
 
     def _score(self, hidden, encoder_output):
         """Calculate the relevance of a particular encoder output in respect to the decoder hidden."""

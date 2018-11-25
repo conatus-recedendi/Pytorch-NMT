@@ -32,7 +32,7 @@ class AttentionDecoderRNN(nn.Module):
         if attn_model is not None:
             self.attention = Attention(attn_model, hidden_size)
 
-    def forward(self, input, last_context, hidden_state, encoder_outputs):
+    def forward(self, input, decoder_context, hidden_state, encoder_outputs):
         """Run forward propagation one step at a time.
 
         Get the embedding of the current input word (last output word) [s = 1 x batch_size x seq_len]
@@ -42,7 +42,7 @@ class AttentionDecoderRNN(nn.Module):
 
         Args:
             input: torch Variable representing the word input constituent
-            last_context: torch Variable representing the previous context
+            decoder_context: torch Variable representing the previous context
             hidden_state: torch Variable representing the previous hidden_state state output
             encoder_outputs: torch Variable containing the encoder output values
 
@@ -54,19 +54,24 @@ class AttentionDecoderRNN(nn.Module):
         """
 
         # Run through RNN
-        input = input.view(-1, 1)
-        embedded = self.embedding(input) # [1, 1, embedding_size]
-
+        input = input.view(1, -1)
+        embedded = self.embedding(input) # [1, -1, embedding_size]
         embedded = self.dropout(embedded)
-        rnn_input = torch.cat((embedded, last_context.unsqueeze(0)), 2) # [1, 1, embedding_size + hidden_size]
-        rnn_output, hidden_state = self.gru(rnn_input, hidden_state)
+
+        #  print(embedded.shape)
+        #  print(decoder_context.shape)
+        rnn_input = torch.cat((embedded, decoder_context), 2) # [1, -1, embedding_size + hidden_size]
+        rnn_output, hidden_state = self.gru(rnn_input, hidden_state) # [1, -1, hidden_size]
 
         # Calculate attention
+        #  print(rnn_output.shape)
+        #  print(encoder_outputs.shape)
         attention_weights = self.attention(rnn_output.squeeze(0), encoder_outputs)
-        context = attention_weights.bmm(encoder_outputs.transpose(0, 1))
+        #  print(attention_weights.shape)
+        context = attention_weights.bmm(encoder_outputs.transpose(0, 1)) # [-1, 1, hidden_size]
+        context = context.transpose(0, 1) # [1, -1, hidden_size]
 
         # Predict output
-        rnn_output = rnn_output.squeeze(0)
-        context = context.squeeze(1)
-        output = F.log_softmax(self.out(torch.cat((rnn_output, context), 1)), dim=1)
+        output = F.log_softmax(self.out(torch.cat((rnn_output, context), 2)), dim=2)
+        output = output.squeeze(0)
         return output, context, hidden_state, attention_weights

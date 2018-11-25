@@ -49,7 +49,7 @@ def train(input, target, encoder, decoder, encoder_opt, decoder_opt, criterion):
 
     # Prepare input and output variables
     decoder_input = torch.LongTensor([0]).to(device)
-    decoder_context = torch.zeros(1, decoder.hidden_size).to(device)
+    decoder_context = torch.zeros(1, 1, decoder.hidden_size).to(device)
     decoder_hidden = encoder_hidden
 
     # Scheduled sampling

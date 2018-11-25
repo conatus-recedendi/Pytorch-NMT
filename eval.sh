@@ -15,6 +15,8 @@ python src/eval.py \
     --dropout 0.1 \
     --language afr \
     --input "i love you." \
+    --max_len 10 \
+    --beam_size 5 \
     --device cpu \
     --seed 19 \
 
