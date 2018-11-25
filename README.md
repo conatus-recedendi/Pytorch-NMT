@@ -41,22 +41,22 @@ The decoder is additionally conditioned on a context vector for predicting the n
 
 ## Prerequisites
 
-* [Python 3.5](https://www.python.org/downloads/release/python-350/)
-* [PyTorch](http://pytorch.org/)
-* [NumPy](http://www.numpy.org/)
+* [Python 3.+](https://www.python.org/downloads/release/python-350/)
+* [PyTorch 0.4+](http://pytorch.org/)
+* [NumPy 1.10+](http://www.numpy.org/)
 
 ## Usage
 
-To train a new language model invoke *train.py* with the desired language abbreviation you would like to translate english to. For instance, spanish can be translated to by specifying 'spa' as input. 'spa-eng.txt' in the data directory will be used. Other languages can be acquired from [here](http://www.manythings.org/anki/).
+To train a new language model invoke *train.py* with the desired language abbreviation you would like to translate english to. For instance, english can be translated to by specifying 'afr' as input. 'afr.txt' in the data directory will be used. Other languages can be acquired from [here](http://www.manythings.org/anki/). (default of input language is english.)
 
 ```
-python train.py langname
+./train.sh
 ```
 
 To translate an input sequence in english into another language, invoke *eval.py* and specify the desired language and sentence. The program will exit if the language model parameters are not found in the data directory or if the language prefix is mistyped.
 
 ```
-python eval.py langname 'some english words'
+./eval.sh
 ```
 
 ## Files

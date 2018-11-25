@@ -5,50 +5,61 @@ from attention import Attention
 
 
 class AttentionDecoderRNN(nn.Module):
-    """Recurrent neural network that makes use of gated recurrent units to translate encoded inputs using attention."""
+    """Recurrent neural network that makes use of gated recurrent units to translate encoded input using attention."""
 
-    def __init__(self, attention_model, hidden_size, output_size, n_layers=1, dropout_p=.1):
+    def __init__(self,
+                 tgt_vocab_size,
+                 embedding_size,
+                 hidden_size,
+                 attn_model,
+                 n_layers=1,
+                 dropout=.1):
         super(AttentionDecoderRNN, self).__init__()
-        self.attention_model = attention_model
+        self.tgt_vocab_size = tgt_vocab_size
+        self.embedding_size = embedding_size
         self.hidden_size = hidden_size
-        self.output_size = output_size
+        self.attn_model = attn_model
         self.n_layers = n_layers
-        self.dropout_p = dropout_p
+        self.dropout = dropout
 
         # Define layers
-        self.embedding = nn.Embedding(output_size, hidden_size)
-        self.gru = nn.GRU(hidden_size * 2, hidden_size, n_layers, dropout=dropout_p)
-        self.out = nn.Linear(hidden_size * 2, output_size)
+        self.embedding = nn.Embedding(tgt_vocab_size, embedding_size)
+        self.dropout = nn.Dropout(dropout)
+        self.gru = nn.GRU(hidden_size + embedding_size, hidden_size, n_layers, dropout=dropout)
+        self.out = nn.Linear(hidden_size * 2, tgt_vocab_size)
 
         # Choose attention model
-        if attention_model is not None:
-            self.attention = Attention(attention_model, hidden_size)
+        if attn_model is not None:
+            self.attention = Attention(attn_model, hidden_size)
 
-    def forward(self, word_input, last_context, last_hidden, encoder_outputs):
+    def forward(self, input, last_context, hidden_state, encoder_outputs):
         """Run forward propagation one step at a time.
-        
+
         Get the embedding of the current input word (last output word) [s = 1 x batch_size x seq_len]
         then combine them with the previous context. Use this as input and run through the RNN. Next,
         calculate the attention from the current RNN state and all encoder outputs. The final output
-        is the next word prediction using the RNN hidden state and context vector.
-        
+        is the next word prediction using the RNN hidden_state state and context vector.
+
         Args:
-            word_input: torch Variable representing the word input constituent
+            input: torch Variable representing the word input constituent
             last_context: torch Variable representing the previous context
-            last_hidden: torch Variable representing the previous hidden state output
+            hidden_state: torch Variable representing the previous hidden_state state output
             encoder_outputs: torch Variable containing the encoder output values
-            
+
         Return:
-            output: torch Variable representing the predicted word constituent 
+            output: torch Variable representing the predicted word constituent
             context: torch Variable representing the context value
-            hidden: torch Variable representing the hidden state of the RNN
+            hidden_state: torch Variable representing the hidden_state state of the RNN
             attention_weights: torch Variable retrieved from the attention model
         """
 
         # Run through RNN
-        word_embedded = self.embedding(word_input).view(1, 1, -1)
-        rnn_input = torch.cat((word_embedded, last_context.unsqueeze(0)), 2)
-        rnn_output, hidden = self.gru(rnn_input, last_hidden)
+        input = input.view(-1, 1)
+        embedded = self.embedding(input) # [1, 1, embedding_size]
+
+        embedded = self.dropout(embedded)
+        rnn_input = torch.cat((embedded, last_context.unsqueeze(0)), 2) # [1, 1, embedding_size + hidden_size]
+        rnn_output, hidden_state = self.gru(rnn_input, hidden_state)
 
         # Calculate attention
         attention_weights = self.attention(rnn_output.squeeze(0), encoder_outputs)
@@ -57,5 +68,5 @@ class AttentionDecoderRNN(nn.Module):
         # Predict output
         rnn_output = rnn_output.squeeze(0)
         context = context.squeeze(1)
-        output = F.log_softmax(self.out(torch.cat((rnn_output, context), 1)))
-        return output, context, hidden, attention_weights
+        output = F.log_softmax(self.out(torch.cat((rnn_output, context), 1)), dim=1)
+        return output, context, hidden_state, attention_weights

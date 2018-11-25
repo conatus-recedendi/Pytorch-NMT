@@ -1,7 +1,6 @@
 import helpers
 import torch
 from language import Language
-from torch.autograd import Variable
 
 """
 Data Extraction
@@ -36,12 +35,12 @@ def prepare_data(lang_name):
 def read_languages(lang):
 
     # Read and parse the text file
-    doc = open('../data/%s.txt' % lang).read()
+    doc = open('./data/%s.txt' % lang).read()
     lines = doc.strip().split('\n')
 
     # Transform the data and initialize language instances
     pairs = [[helpers.normalize_string(s) for s in l.split('\t')] for l in lines]
-    input_lang = Language('spa')
+    input_lang = Language('eng')
     output_lang = Language(lang)
 
     return input_lang, output_lang, pairs
@@ -57,16 +56,14 @@ def indexes_from_sentence(lang, sentence):
     return [lang.word2index[word] for word in sentence.split(' ')]
 
 
-def variable_from_sentence(lang, sentence):
+def tensor_from_sentence(lang, sentence, device='cpu'):
     indexes = indexes_from_sentence(lang, sentence)
-    indexes.append(1)
-    var = Variable(torch.LongTensor(indexes).view(-1, 1))
-    var = var.cuda()
-    return var
+    indexes.append(Language.eos_token)
+    tensor = torch.LongTensor(indexes).view(-1, 1).to(device)
+    return tensor
 
 
-def variables_from_pair(pair, input_lang, output_lang):
-    input_variable = variable_from_sentence(input_lang, pair[0])
-    target_variable = variable_from_sentence(output_lang, pair[1])
-    return input_variable, target_variable
-
+def tensor_from_pair(pair, input_lang, output_lang, device='cpu'):
+    input = tensor_from_sentence(input_lang, pair[0], device)
+    target = tensor_from_sentence(output_lang, pair[1], device)
+    return input, target

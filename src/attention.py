@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.autograd import Variable
 
 
 class Attention(nn.Module):
@@ -21,33 +20,35 @@ class Attention(nn.Module):
 
     def forward(self, hidden, encoder_outputs):
         """Attend all encoder inputs conditioned on the previous hidden state of the decoder.
-        
-        After creating variables to store the attention energies, calculate their 
+
+        After creating variables to store the attention energies, calculate their
         values for each encoder output and return the normalized values.
-        
+
         Args:
-            hidden: decoder hidden output used for condition
-            encoder_outputs: list of encoder outputs
-            
+            hidden: decoder hidden output used for condition  [1, hidden_size]
+            encoder_outputs: list of encoder outputs [len, 1, hidden_size]
+
         Returns:
              Normalized (0..1) energy values, re-sized to 1 x 1 x seq_len
         """
+        #  print('hidden: ', hidden.shape)
+        #  print('encoder_outputs: ', encoder_outputs.shape)
 
-        seq_len = len(encoder_outputs)
-        energies = Variable(torch.zeros(seq_len)).cuda()
+        seq_len = encoder_outputs.size(0)
+        energies = torch.zeros(seq_len).to(encoder_outputs.device)
         for i in range(seq_len):
             energies[i] = self._score(hidden, encoder_outputs[i])
-        return F.softmax(energies).unsqueeze(0).unsqueeze(0)
+        return F.softmax(energies, dim=0).unsqueeze(0).unsqueeze(0)
 
     def _score(self, hidden, encoder_output):
         """Calculate the relevance of a particular encoder output in respect to the decoder hidden."""
 
         if self.method == 'dot':
-            energy = hidden.dot(encoder_output)
+            energy = hidden.view(-1).dot(encoder_output.view(-1))
         elif self.method == 'general':
             energy = self.attention(encoder_output)
-            energy = hidden.dot(energy)
+            energy = hidden.view(-1).dot(energy.view(-1))
         elif self.method == 'concat':
             energy = self.attention(torch.cat((hidden, encoder_output), 1))
-            energy = self.other.dot(energy)
+            energy = self.other.view(-1).dot(energy.view(-1))
         return energy
