@@ -13,13 +13,13 @@ python src/train.py \
     --hidden_size 256 \
     --n_layers 2 \
     --dropout 0.1 \
-    --teacher_forcing_ratio 0.7 \
+    --teacher_forcing_ratio 0.8 \
     --clip 5.0 \
     --lr 0.0005 \
-    --n_epochs 100000 \
+    --n_epochs 50000 \
     --plot_every 200 \
     --print_every 1000 \
-    --language afr \
+    --language spa \
     --device cpu \
     --seed 19 \
 
