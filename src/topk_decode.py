@@ -43,7 +43,8 @@ class TopKDecode(torch.nn.Module):
                  beam_size,
                  vocab_size,
                  sos_id,
-                 eos_id):
+                 eos_id,
+                 device):
         super(TopKDecode, self).__init__()
         self.decoder = decoder
         self.beam_size = beam_size
@@ -51,6 +52,7 @@ class TopKDecode(torch.nn.Module):
         self.vocab_size = vocab_size
         self.sos_id = sos_id
         self.eos_id = eos_id
+        self.device = device
 
     def forward(self,
                 decoder_context=None,
@@ -60,7 +62,7 @@ class TopKDecode(torch.nn.Module):
                 batch_size=1):
 
         # [batch_size * beam_size, 1]
-        self.pos_index = (torch.LongTensor(range(batch_size)) * self.beam_size).view(-1, 1)
+        self.pos_index = (torch.LongTensor(range(batch_size)) * self.beam_size).view(-1, 1).to(device)
 
         # Inflate the initial decoder_hidden states to be of size: batch_size*beam_size x h
 
@@ -71,12 +73,12 @@ class TopKDecode(torch.nn.Module):
 
         # Initialize the scores; for the first step,
         # ignore the inflated copies to avoid duplicate entries in the top beam_size
-        sequence_scores = torch.Tensor(batch_size * self.beam_size, 1)
+        sequence_scores = torch.Tensor(batch_size * self.beam_size, 1).to(device)
         sequence_scores.fill_(-float('Inf'))
         sequence_scores.index_fill_(0, torch.LongTensor([i * self.beam_size for i in range(0, batch_size)]), 0.0)
 
         # Initialize the decoder_input vector
-        decoder_input = torch.LongTensor([[self.sos_id] * batch_size * self.beam_size]) # [1, beam_size * batch_size]
+        decoder_input = torch.LongTensor([[self.sos_id] * batch_size * self.beam_size]).to(device) # [1, beam_size * batch_size]
 
         # Store decisions for backtracking
         stored_outputs = list()
@@ -97,7 +99,6 @@ class TopKDecode(torch.nn.Module):
                                                                 encoder_outputs)
 
             stored_outputs.append(output)
-
 
             # To get the full sequence scores for the new candidates, add the local
             # scores for t_i to the predecessor scores for t_(i-1)

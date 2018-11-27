@@ -81,8 +81,10 @@ def evaluate(sentence, max_len=10):
         args.beam_size,
         output_lang.n_words,
         Language.sos_token,
-        Language.eos_token
+        Language.eos_token,
+        device
     )
+    topk_decoder = topk_decoder.to(device)
 
 
     decoder_outputs, _, metadata = topk_decoder(
@@ -90,8 +92,9 @@ def evaluate(sentence, max_len=10):
         decoder_hidden,
         encoder_outputs,
         args.max_len,
-        args.batch_size
+        args.batch_size,
     )
+
     beam_words = torch.stack(metadata['topk_sequence'], dim=0)
     #  print(beam_words.shape)
     beam_words = beam_words.squeeze(3).squeeze(1).transpose(0, 1)
