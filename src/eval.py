@@ -3,6 +3,7 @@ import etl
 import helpers
 import torch
 from attention_decoder import AttentionDecoderRNN
+from topk_decode import TopKDecode
 from encoder import EncoderRNN
 from language import Language
 from beam import Beam
@@ -19,6 +20,7 @@ parser.add_argument('--language', type=str, help='specific which language.')
 parser.add_argument('--input', type=str, help='src -> tgt')
 parser.add_argument('--max_len', type=int)
 parser.add_argument('--beam_size', type=int)
+parser.add_argument('--batch_size', type=int)
 parser.add_argument('--device', type=str, help='cpu or cuda')
 parser.add_argument('--seed', type=str, help='random seed')
 args = parser.parse_args()
@@ -73,14 +75,30 @@ def evaluate(sentence, max_len=10):
 
     decoder_hidden = encoder_hidden
 
-    greedy_words, greedy_attention = greedy_decode(
+    topk_decoder = TopKDecode(
+        decoder,
+        decoder.hidden_size,
+        args.beam_size,
+        output_lang.n_words,
+        Language.sos_token,
+        Language.eos_token
+    )
+
+
+    decoder_outputs, _, metadata = topk_decoder(
         decoder_context,
         decoder_hidden,
         encoder_outputs,
-        max_len
+        args.max_len,
+        args.batch_size
     )
-    print_sentence(greedy_words)
+    beam_words = torch.stack(metadata['topk_sequence'], dim=0)
+    #  print(beam_words.shape)
+    beam_words = beam_words.squeeze(3).squeeze(1).transpose(0, 1)
+    beam_length = metadata['topk_length']
+    print_sentence(beam_words, beam_length[0], 'beam')
 
+    """
     beam_words, _, _= beam_decode(
         decoder_context,
         decoder_hidden,
@@ -93,6 +111,16 @@ def evaluate(sentence, max_len=10):
     beam_words = beam_words[0]
     #  print(beam_words)
     print_sentence(beam_words, 'beam')
+
+    """
+    greedy_words, greedy_attention = greedy_decode(
+        decoder_context,
+        decoder_hidden,
+        encoder_outputs,
+        max_len
+    )
+    print_sentence(greedy_words)
+
 
 def greedy_decode(decoder_context,
                   decoder_hidden,
@@ -128,7 +156,7 @@ def beam_decode(decoder_context,
                 encoder_outputs,
                 max_len,
                 beam_size=5):
-    batch_size = 1
+    batch_size = args.beam_size
     vocab_size = output_lang.n_words
     # [1, batch_size x beam_size]
     decoder_input = torch.ones(batch_size * beam_size, dtype=torch.long, device=device) * Language.sos_token
@@ -207,12 +235,12 @@ def assemble_sentence(words):
     sentence = ' '.join(final_words)
     return sentence
 
-def print_sentence(words, mode='greedy'):
+def print_sentence(words, lengths=None, mode='greedy'):
     if mode == 'greedy':
         print('greedy > %s' % assemble_sentence(words))
     elif mode == 'beam':
-        for i, ids in enumerate(words.tolist()):
-            cur_words = [output_lang.index2word[id] for id in ids]
+        for i, (length, ids) in enumerate(zip(lengths, words.tolist())):
+            cur_words = [output_lang.index2word[id] for id in ids[:length]]
             sentence = assemble_sentence(cur_words)
             print('beam %d > %s' % (i, sentence))
 
