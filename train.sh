@@ -20,7 +20,7 @@ python src/train.py \
     --plot_every 200 \
     --print_every 1000 \
     --language spa \
-    --device cpu \
+    --device cuda \
     --seed 19 \
 
 /
