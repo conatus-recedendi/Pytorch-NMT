@@ -1,3 +1,4 @@
+import sys
 import argparse
 import etl
 import helpers
@@ -29,8 +30,11 @@ parser.add_argument('--device', type=str, help='cpu or cuda')
 parser.add_argument('--seed', type=str, help='random seed')
 args = parser.parse_args()
 
+print(sys.argv)
+
 torch.random.manual_seed(args.seed)
 device = torch.device(args.device)
+print('device: ', device)
 
 helpers.validate_language(args.language)
 
