@@ -2,7 +2,7 @@ import random
 
 
 def filter_by_length(
-    src_file, tgt_file, out_src, out_tgt, max_len=50, shuffle=True, seed=42
+    src_file, tgt_file, out_src, out_tgt, max_len=50, min_len=0, shuffle=True, seed=42
 ):
     src_lines = open(src_file, encoding="utf-8").read().strip().split("\n")
     tgt_lines = open(tgt_file, encoding="utf-8").read().strip().split("\n")
@@ -11,7 +11,12 @@ def filter_by_length(
 
     filtered_pairs = []
     for s, t in zip(src_lines, tgt_lines):
-        if len(s.split()) <= max_len and len(t.split()) <= max_len:
+        if (
+            len(s.split()) <= max_len
+            and len(t.split()) <= max_len
+            and len(s.split()) > min_len
+            and len(t.split()) > min_len
+        ):
             filtered_pairs.append((s, t))
 
     print(f"Before filtering: {len(src_lines)} pairs")
@@ -31,10 +36,11 @@ def filter_by_length(
 
 if __name__ == "__main__":
     filter_by_length(
-        src_file="train.50k.en",
-        tgt_file="train.50k.de",
-        out_src="train.50k.len50.en",
-        out_tgt="train.50k.len50.de",
+        src_file="./data/wmt/train14/en-de/train.en",
+        tgt_file="./data/wmt/train14/en-de/train.de",
+        out_src="train.len50.en",
+        out_tgt="train.len50.de",
         max_len=50,
+        min_len=0,
         shuffle=True,
     )
