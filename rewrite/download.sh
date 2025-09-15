@@ -28,13 +28,13 @@ mkdir -p data/wmt/train14/{en-de,de-en}
 # tar -xvf data/wmt/train14/en-de/de-en.tgz -C data/wmt/train14/en-de
 
 # 2) News Commentary v9
-wget -P data/wmt/train14/en-de http://www.statmt.org/wmt14/training-parallel-nc-v9/news-commentary-v9.de-en.tar.gz
+# https://www.statmt.org/wmt14/training-parallel-nc-v9.tgz
+wget -P data/wmt/train14/en-de https://www.statmt.org/wmt14/training-parallel-nc-v9.tgz
 tar -xvf data/wmt/train14/en-de/news-commentary-v9.de-en.tar.gz -C data/wmt/train14/en-de
-
 # 3) Common Crawl
-wget -P data/wmt/train14/en-de http://www.statmt.org/wmt14/training-parallel-commoncrawl.tgz
+# https://www.statmt.org/wmt13/training-parallel-commoncrawl.tgz
+wget -P data/wmt/train14/en-de https://www.statmt.org/wmt13/training-parallel-commoncrawl.tgz
 tar -xvf data/wmt/train14/en-de/training-parallel-commoncrawl.tgz -C data/wmt/train14/en-de
-
 # 4) 정리: 평행 문장 파일 추출
 # 예: europarl-v7 has files like: europarl-v7.de-en.en, europarl-v7.de-en.de
 # news-commentary v9: similar
