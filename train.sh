@@ -17,8 +17,8 @@ python src/train.py \
     --clip 5.0 \
     --lr 1 \
     --n_epochs 10 \
-    --plot_every 200 \
-    --print_every 1000 \
+    --plot_every 100 \
+    --print_every 1 \
     --language spa \
     --device cuda \
     --seed 19
