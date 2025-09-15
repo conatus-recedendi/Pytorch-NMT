@@ -13,7 +13,7 @@ def read_normalized_lines(path):
     # 만약 한 라인에 \n이 여러개 있으면 -> 하나로 간주함
     # \r\n이 아니 \n으로만 split
     # lines = data.split(b"\n")
-    lines = data.split("\n")
+    lines = data.split(b"\n")
     # bytes -> str (UTF-8)
     return [ln.decode("utf-8", errors="strict") for ln in lines]
 
