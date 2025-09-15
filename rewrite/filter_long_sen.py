@@ -78,8 +78,8 @@ def filter_by_length_strict(
 
 if __name__ == "__main__":
     filter_by_length_strict(
-        src_file="./data/wmt/train14/en-de/train.en",
-        tgt_file="./data/wmt/train14/en-de/train.de",
+        src_file="train.50k.en",
+        tgt_file="train.50k.de",
         out_src="train.len50.en",
         out_tgt="train.len50.de",
         max_len=50,

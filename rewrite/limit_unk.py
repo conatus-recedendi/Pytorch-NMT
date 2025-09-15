@@ -26,8 +26,8 @@ def replace_with_unk(file_path, vocab, out_path):
 
 if __name__ == "__main__":
     # 입력 파일 경로
-    train_en = "train.len50.en"
-    train_de = "train.len50.de"
+    train_en = "./data/wmt/train14/en-de/train.en"
+    train_de = "./data/wmt/train14/en-de/train.de"
 
     # 어휘 구축 (각각 별도)
     vocab_en = build_vocab(train_en, vocab_size=50000)
