@@ -21,6 +21,4 @@ python src/train.py \
     --print_every 1000 \
     --language spa \
     --device cuda \
-    --seed 19 \
-
-/
+    --seed 19
