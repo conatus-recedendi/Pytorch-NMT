@@ -21,19 +21,28 @@ sacrebleu -t wmt15 -l de-en --echo src > data/wmt/test15/de-en/src.de
 
 
 # 저장할 디렉토리
-mkdir -p data/wmt/train14/{en-de,de-en}
+mkdir -p data/wmt/train14/en-de
 
 # 1) Europarl v7
-wget -P data/wmt/train14/en-de http://www.statmt.org/europarl/v7/de-en.tgz
+if [ ! -f data/wmt/train14/en-de/de-en.tgz ]; then
+    echo "Downloading Europarl v7..."
+    wget -P data/wmt/train14/en-de http://www.statmt.org/europarl/v7/de-en.tgz
+fi
 tar -xvf data/wmt/train14/en-de/de-en.tgz -C data/wmt/train14/en-de
 
 # 2) News Commentary v9
 # https://www.statmt.org/wmt14/training-parallel-nc-v9.tgz
-wget -P data/wmt/train14/en-de https://www.statmt.org/wmt14/training-parallel-nc-v9.tgz
+if [ ! -f data/wmt/train14/en-de/training-parallel-nc-v9.tgz ]; then
+    echo "Downloading News Commentary v9..."
+    wget -P data/wmt/train14/en-de https://www.statmt.org/wmt14/training-parallel-nc-v9.tgz
+fi
 tar -xvf data/wmt/train14/en-de/training-parallel-nc-v9.tgz -C data/wmt/train14/en-de
 # 3) Common Crawl
 # https://www.statmt.org/wmt13/training-parallel-commoncrawl.tgz
-wget -P data/wmt/train14/en-de https://www.statmt.org/wmt13/training-parallel-commoncrawl.tgz
+if [ ! -f data/wmt/train14/en-de/training-parallel-commoncrawl.tgz ]; then
+    echo "Downloading Common Crawl..."
+    wget -P data/wmt/train14/en-de https://www.statmt.org/wmt13/training-parallel-commoncrawl.tgz
+fi
 tar -xvf data/wmt/train14/en-de/training-parallel-commoncrawl.tgz -C data/wmt/train14/en-de
 # 4) 정리: 평행 문장 파일 추출
 # 예: europarl-v7 has files like: europarl-v7.de-en.en, europarl-v7.de-en.de
@@ -41,7 +50,7 @@ tar -xvf data/wmt/train14/en-de/training-parallel-commoncrawl.tgz -C data/wmt/tr
 # commoncrawl: similar
 
 # (Optional) 조합하여 하나의 병렬 파일로 합치기
-cat data/wmt/train14/en-de/europarl-v7.de-en.en data/wmt/train14/en-de/news-commentary-v9.de-en.en data/wmt/train14/en-de/commoncrawl.de-en.en > data/wmt/train14/en-de/train.en
-cat data/wmt/train14/en-de/europarl-v7.de-en.de data/wmt/train14/en-de/news-commentary-v9.de-en.de data/wmt/train14/en-de/commoncrawl.de-en.de > data/wmt/train14/en-de/train.de
+cat data/wmt/train14/en-de/europarl-v7.de-en.en data/wmt/train14/en-de/training/news-commentary-v9.de-en.en data/wmt/train14/en-de/commoncrawl.de-en.en > data/wmt/train14/en-de/train.en
+cat data/wmt/train14/en-de/europarl-v7.de-en.de data/wmt/train14/en-de/training/news-commentary-v9.de-en.de data/wmt/train14/en-de/commoncrawl.de-en.de > data/wmt/train14/en-de/train.de
 
 echo "Downloaded and concatenated WMT14 EN-DE training data."
