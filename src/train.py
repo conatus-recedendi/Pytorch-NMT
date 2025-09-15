@@ -99,6 +99,7 @@ def train(input, target, encoder, decoder, encoder_opt, decoder_opt, criterion):
 
 input_lang, output_lang, pairs = etl.prepare_data(args.language)
 
+print(input_lang)
 # Initialize models
 encoder = EncoderRNN(
     input_lang.n_words,
