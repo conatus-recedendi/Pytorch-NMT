@@ -6,7 +6,7 @@ def build_vocab(file_path, vocab_size=50000):
     counter = collections.Counter()
     with open(file_path, "r", encoding="utf-8") as f:
         for line in f:
-            counter.update(line.strip().split())
+            counter.update(line.strip().split(b"\n"))
     most_common = [w for w, _ in counter.most_common(vocab_size)]
     return set(most_common)
 
