@@ -13,11 +13,11 @@ python src/train.py \
     --hidden_size 1000 \
     --n_layers 4 \
     --dropout 0.0 \
-    --teacher_forcing_ratio 0.8 \
+    --teacher_forcing_ratio 0.0 \
     --clip 5.0 \
     --lr 1 \
     --n_epochs 10 \
-    --plot_every 100 \
+    --plot_every 1 \
     --print_every 1 \
     --language spa \
     --device cuda \

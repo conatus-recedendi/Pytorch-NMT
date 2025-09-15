@@ -149,6 +149,8 @@ for epoch in range(1, args.n_epochs + 1):
         input, target, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion
     )
 
+    print(input.shape)
+
     # Keep track of loss
     print_loss_total += loss
     plot_loss_total += loss
