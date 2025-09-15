@@ -5,7 +5,9 @@ from itertools import zip_longest
 def read_normalized_lines(path):
     # 개행 정규화: CRLF/CR -> LF, 개행만 제거하고 내용 공백은 보존
     with open(path, "rb") as f:
-        data = f.read()
+        data = (
+            f.read().decode("utf-8", errors="strict").encode("utf-8", errors="strict")
+        )
     data = data.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
     # 마지막 개행으로 끝나면 마지막에 b"" 요소가 생김 -> 실제 '빈 줄'로 취급
     lines = data.split(b"\n")
