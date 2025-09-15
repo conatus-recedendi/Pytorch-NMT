@@ -11,7 +11,9 @@ def read_normalized_lines(path):
     # data = data.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
     # 마지막 개행으로 끝나면 마지막에 b"" 요소가 생김 -> 실제 '빈 줄'로 취급
     # 만약 한 라인에 \n이 여러개 있으면 -> 하나로 간주함
-    lines = data.split(b"\r\n")
+    # \r\n이 아니 \n으로만 split
+    # lines = data.split(b"\n")
+    lines = data.split("\n")
     # bytes -> str (UTF-8)
     return [ln.decode("utf-8", errors="strict") for ln in lines]
 
