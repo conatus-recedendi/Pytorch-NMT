@@ -19,11 +19,10 @@ def replace_with_unk(file_path, vocab, out_path):
         for line in fin:
             line = line.strip()
             if not line:
+                fout.write("\n")
                 continue
             tokens = line.strip().split()
             new_tokens = [tok if tok in vocab else "<unk>" for tok in tokens]
-            if "\n" in new_tokens:
-                print("Warning: \\n found in tokens!")
 
             fout.write(" ".join(new_tokens) + "\n")
 
