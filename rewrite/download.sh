@@ -24,13 +24,13 @@ sacrebleu -t wmt15 -l de-en --echo src > data/wmt/test15/de-en/src.de
 mkdir -p data/wmt/train14/{en-de,de-en}
 
 # 1) Europarl v7
-# wget -P data/wmt/train14/en-de http://www.statmt.org/europarl/v7/de-en.tgz
-# tar -xvf data/wmt/train14/en-de/de-en.tgz -C data/wmt/train14/en-de
+wget -P data/wmt/train14/en-de http://www.statmt.org/europarl/v7/de-en.tgz
+tar -xvf data/wmt/train14/en-de/de-en.tgz -C data/wmt/train14/en-de
 
 # 2) News Commentary v9
 # https://www.statmt.org/wmt14/training-parallel-nc-v9.tgz
 wget -P data/wmt/train14/en-de https://www.statmt.org/wmt14/training-parallel-nc-v9.tgz
-tar -xvf data/wmt/train14/en-de/news-commentary-v9.de-en.tar.gz -C data/wmt/train14/en-de
+tar -xvf data/wmt/train14/en-de/training-parallel-nc-v9.tgz -C data/wmt/train14/en-de
 # 3) Common Crawl
 # https://www.statmt.org/wmt13/training-parallel-commoncrawl.tgz
 wget -P data/wmt/train14/en-de https://www.statmt.org/wmt13/training-parallel-commoncrawl.tgz
