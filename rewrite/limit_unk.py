@@ -17,6 +17,9 @@ def replace_with_unk(file_path, vocab, out_path):
         out_path, "w", encoding="utf-8"
     ) as fout:
         for line in fin:
+            line = line.strip()
+            if not line:
+                continue
             tokens = line.strip().split()
             new_tokens = [tok if tok in vocab else "<unk>" for tok in tokens]
             fout.write(" ".join(new_tokens) + "\n")
