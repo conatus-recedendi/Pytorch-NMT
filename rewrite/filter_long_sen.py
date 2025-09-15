@@ -4,8 +4,8 @@ import random
 def filter_by_length(
     src_file, tgt_file, out_src, out_tgt, max_len=50, min_len=0, shuffle=True, seed=42
 ):
-    src_lines = open(src_file, encoding="utf-8").read().strip().split("\n")
-    tgt_lines = open(tgt_file, encoding="utf-8").read().strip().split("\n")
+    src_lines = open(src_file, encoding="utf-8").read().split("\n")
+    tgt_lines = open(tgt_file, encoding="utf-8").read().split("\n")
 
     assert len(src_lines) == len(tgt_lines), "Source/target 파일 길이가 다릅니다!"
 
