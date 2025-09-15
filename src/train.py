@@ -121,8 +121,6 @@ encoder = encoder.to(device)
 decoder = decoder.to(device)
 
 # Initialize optimizers and criterion
-encoder_optimizer = optim.Adam(encoder.parameters(), lr=args.lr)
-decoder_optimizer = optim.Adam(decoder.parameters(), lr=args.lr)
 criterion = nn.NLLLoss()
 
 
@@ -133,8 +131,13 @@ print_loss_total = 0  # Reset every print_every
 plot_loss_total = 0  # Reset every plot_every
 
 # Begin training
+lr = args.lr
 for epoch in range(1, args.n_epochs + 1):
     # Get training data for this cycle
+    if epoch > 5:
+        lr = lr / 2
+    encoder_optimizer = optim.Adam(encoder.parameters(), lr=lr)
+    decoder_optimizer = optim.Adam(decoder.parameters(), lr=lr)
     training_pair = etl.tensor_from_pair(
         random.choice(pairs), input_lang, output_lang, device
     )

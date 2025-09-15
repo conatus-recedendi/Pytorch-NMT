@@ -8,15 +8,15 @@
 
 
 python src/train.py \
-    --attn_model general \
-    --embedding_size 256 \
-    --hidden_size 256 \
-    --n_layers 2 \
-    --dropout 0.1 \
+    --attn_model dot \
+    --embedding_size 1000 \
+    --hidden_size 1000 \
+    --n_layers 4 \
+    --dropout 0.0 \
     --teacher_forcing_ratio 0.8 \
     --clip 5.0 \
-    --lr 0.0005 \
-    --n_epochs 50000 \
+    --lr 1 \
+    --n_epochs 10 \
     --plot_every 200 \
     --print_every 1000 \
     --language spa \
