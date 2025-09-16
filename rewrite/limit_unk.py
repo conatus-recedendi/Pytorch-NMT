@@ -4,24 +4,24 @@ import collections
 def build_vocab(file_path, vocab_size=50000):
     """주어진 파일에서 상위 vocab_size 단어의 집합을 리턴"""
     counter = collections.Counter()
-    with open(file_path, "r", encoding="utf-8") as f:
-        for line in f:
-            # counter.update(line.strip().split(b"\n"))
-            counter.update(line.strip().split("\n"))
+    with open(file_path, "rb") as f:
+        data = (
+            f.read().decode("utf-8", errors="strict").encode("utf-8", errors="strict")
+        )
+        for line in data.split(b"\n"):
+            counter.update(line.strip().split(b"\n"))
     most_common = [w for w, _ in counter.most_common(vocab_size)]
     return set(most_common)
 
 
 def replace_with_unk(file_path, vocab, out_path):
     """파일을 읽어서 vocab에 없는 단어는 <unk>로 치환 후 저장"""
-    with open(file_path, "r", encoding="utf-8") as fin, open(
-        out_path, "w", encoding="utf-8"
-    ) as fout:
+    with open(file_path, "rb") as fin, open(out_path, "wb") as fout:
         for line in fin:
-            tokens = line.strip().split("\n")
-            new_tokens = [tok if tok in vocab else "<unk>" for tok in tokens]
+            tokens = line.strip().split(b"\n")
+            new_tokens = [tok if tok in vocab else b"<unk>" for tok in tokens]
 
-            fout.write(" ".join(new_tokens) + "\n")
+            fout.write(b" ".join(new_tokens) + b    "\n")
 
 
 if __name__ == "__main__":
