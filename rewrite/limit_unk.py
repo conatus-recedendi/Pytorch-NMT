@@ -14,7 +14,7 @@ def build_vocab(file_path, vocab_size=50000):
             idx += 1
             # if idx < 100:
             #     print(line.strip().split(b" "))
-            counter.update(line.strip())
+            counter.update(line.strip().split(b" "))
 
     most_common = [w for w, _ in counter.most_common(vocab_size)]
     return set(most_common)
@@ -43,9 +43,9 @@ if __name__ == "__main__":
 
     # 어휘 구축 (각각 별도)
     vocab_en = build_vocab(train_en, vocab_size=50000)
+    print(list(vocab_en)[:10])
     vocab_de = build_vocab(train_de, vocab_size=50000)
     print(len(vocab_en), len(vocab_de))
-    print(list(vocab_en)[:10])
 
     # 출력 파일 경로
     out_en = "train.50k.en"
