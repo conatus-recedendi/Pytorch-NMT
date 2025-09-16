@@ -37,11 +37,11 @@ def prepare_data(lang_name):
 def read_languages(lang):
 
     # Read and parse the text file
-    doc = open("../rewrite/train.len50.%s" % lang, "rb")
+    doc = open("./rewrite/train.len50.%s" % lang, "rb")
     lines = doc.read().strip().split(b"\n")
     lines = [l.decode("utf-8", errors="strict") for l in lines]
 
-    doc_en = open("../rewrite/train.len50.en", "rb")
+    doc_en = open("./rewrite/train.len50.en", "rb")
     lines_en = doc_en.read().strip().split(b"\n")
     lines_en = [l.decode("utf-8", errors="strict") for l in lines_en]
 
