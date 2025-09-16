@@ -38,6 +38,8 @@ if __name__ == "__main__":
     # 어휘 구축 (각각 별도)
     vocab_en = build_vocab(train_en, vocab_size=50000)
     vocab_de = build_vocab(train_de, vocab_size=50000)
+    print(len(vocab_en), len(vocab_de))
+    print(list(vocab_en)[:10])
 
     # 출력 파일 경로
     out_en = "train.50k.en"
