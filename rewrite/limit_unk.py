@@ -23,9 +23,9 @@ def replace_with_unk(file_path, vocab, out_path):
         for line in data.split(b"\n"):
 
             tokens = line.strip().split(b" ")
-            print(tokens)
+            # print(tokens)
             new_tokens = [tok if tok in vocab else b"<unk>" for tok in tokens]
-            print(new_tokens)
+            # print(new_tokens)
 
             fout.write(b" ".join(new_tokens) + b"\n")
 
