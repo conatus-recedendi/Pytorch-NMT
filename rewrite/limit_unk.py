@@ -18,7 +18,7 @@ def replace_with_unk(file_path, vocab, out_path):
     """파일을 읽어서 vocab에 없는 단어는 <unk>로 치환 후 저장"""
     with open(file_path, "rb") as fin, open(out_path, "wb") as fout:
         for line in fin:
-            tokens = line.strip().split(b"\n")
+            tokens = line.strip()
             new_tokens = [tok if tok in vocab else b"<unk>" for tok in tokens]
 
             fout.write(b" ".join(new_tokens) + b"\n")
