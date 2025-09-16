@@ -13,7 +13,7 @@ def build_vocab(file_path, vocab_size=50000):
         for line in data.split(b"\n"):
             idx += 1
             if idx < 100:
-                print(line, line.strip())
+                print(line.strip())
             counter.update(line.strip())
 
     most_common = [w for w, _ in counter.most_common(vocab_size)]
