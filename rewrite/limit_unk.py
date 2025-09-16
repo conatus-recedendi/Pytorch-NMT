@@ -21,8 +21,11 @@ def replace_with_unk(file_path, vocab, out_path):
             fin.read().decode("utf-8", errors="strict").encode("utf-8", errors="strict")
         )
         for line in data.split(b"\n"):
+
             tokens = line.strip()
+            print(tokens)
             new_tokens = [tok if tok in vocab else b"<unk>" for tok in tokens]
+            print(new_tokens)
 
             fout.write(b" ".join(new_tokens) + b"\n")
 
