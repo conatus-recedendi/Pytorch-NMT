@@ -19,6 +19,6 @@ python src/train.py \
     --n_epochs 10 \
     --plot_every 1 \
     --print_every 1 \
-    --language spa \
+    --language de \
     --device cuda \
     --seed 19

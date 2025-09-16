@@ -30,8 +30,8 @@ if __name__ == "__main__":
     train_de = "./data/wmt/train14/en-de/train.de"
 
     # 어휘 구축 (각각 별도)
-    vocab_en = build_vocab(train_en, vocab_size=50000)
-    vocab_de = build_vocab(train_de, vocab_size=50000)
+    vocab_en = build_vocab(train_en, vocab_size=50)
+    vocab_de = build_vocab(train_de, vocab_size=50)
 
     # 출력 파일 경로
     out_en = "train.50k.en"

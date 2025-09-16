@@ -38,7 +38,7 @@ torch.random.manual_seed(args.seed)
 device = torch.device(args.device)
 print("device: ", device)
 
-helpers.validate_language(args.language)
+# helpers.validate_language(args.language)
 
 
 def train(input, target, encoder, decoder, encoder_opt, decoder_opt, criterion):
