@@ -9,8 +9,13 @@ def build_vocab(file_path, vocab_size=50000):
             f.read().decode("utf-8", errors="strict").encode("utf-8", errors="strict")
         )
         print(data[:100])
+        idx = 0
         for line in data.split(b"\n"):
+            idx += 1
+            if idx < 100:
+                print(line, line.strip())
             counter.update(line.strip())
+
     most_common = [w for w, _ in counter.most_common(vocab_size)]
     return set(most_common)
 
