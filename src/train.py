@@ -31,6 +31,7 @@ parser.add_argument("--language", type=str, help="specific which language.")
 parser.add_argument("--input", type=str, help="src -> tgt")
 parser.add_argument("--device", type=str, help="cpu or cuda")
 parser.add_argument("--seed", type=str, help="random seed")
+parser.add_argument("--batch_size", type=int, help="batch size")
 args = parser.parse_args()
 
 print(sys.argv)

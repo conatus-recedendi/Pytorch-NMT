@@ -21,4 +21,5 @@ python src/train.py \
     --print_every 1 \
     --language de \
     --device cuda \
-    --seed 19
+    --seed 19 \
+    --batch_size 128
