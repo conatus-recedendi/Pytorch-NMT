@@ -48,13 +48,14 @@ def train(input, target, encoder, decoder, encoder_opt, decoder_opt, criterion):
     decoder_opt.zero_grad()
     loss = 0
     # input is listattribute 'size'
-    batch_size = len(input)
+    batch_size = input.size(0)
 
     # Get input and target seq lengths
-    target_length = len(target)
+    target_length = target.size(1)
 
     # Run through encoder
     encoder_hidden = encoder.init_hidden(device)
+    print(input.shape, encoder_hidden.shape)
     encoder_outputs, encoder_hidden = encoder(input, encoder_hidden)
 
     # Prepare input and output variables
