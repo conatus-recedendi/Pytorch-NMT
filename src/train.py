@@ -58,7 +58,8 @@ def train(input, target, encoder, decoder, encoder_opt, decoder_opt, criterion):
     # Prepare input and output variables
     # decoder_input = torch.LongTensor([0]).to(device)
     decoder_input = torch.LongTensor([0] * batch_size).to(device)
-    decoder_context = torch.zeros(1, 1, decoder.hidden_size).to(device)
+    #
+    decoder_context = torch.zeros(batch_size, 1, decoder.hidden_size).to(device)
     decoder_hidden = encoder_hidden
 
     # Scheduled sampling
@@ -135,6 +136,7 @@ plot_loss_total = 0  # Reset every plot_every
 
 # Begin training
 lr = args.lr
+progress = 0.0
 for epoch in range(1, args.n_epochs + 1):
     # Get training data for this cycle
     if epoch > 5:
@@ -142,7 +144,15 @@ for epoch in range(1, args.n_epochs + 1):
     encoder_optimizer = optim.Adam(encoder.parameters(), lr=lr)
     decoder_optimizer = optim.Adam(decoder.parameters(), lr=lr)
     batch_size = 128
+
     for _ in range(len(pairs) // batch_size):
+        progress = (_ + 1) / ((len(pairs) // batch_size) * epoch) * 100
+
+        print(
+            "%cEpoch: %d/%d, Progress: %f%%" % (13, epoch, args.n_epochs, progress),
+            end="\r",
+        )
+        sys.stdout.flush()
         pair_batch = pairs[_ * batch_size : (_ + 1) * batch_size]
         training_pair_batch = etl.tensor_from_pair(
             pair_batch, input_lang, output_lang, device
