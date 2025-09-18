@@ -5,7 +5,9 @@ import torch.nn as nn
 class EncoderRNN(nn.Module):
     """Recurrent neural network that encodes a given input sequence."""
 
-    def __init__(self, src_vocab_size, embedding_size, hidden_size, n_layers=1, dropout=0.1):
+    def __init__(
+        self, src_vocab_size, embedding_size, hidden_size, n_layers=1, dropout=0.1
+    ):
         super(EncoderRNN, self).__init__()
         self.src_vocab_size = src_vocab_size
         self.embedding_size = embedding_size
@@ -18,10 +20,12 @@ class EncoderRNN(nn.Module):
 
     def forward(self, inputs, hidden_state):
         """
-        inputs: [len]
+        inputs: [batch, len]
         """
-        inputs = inputs.view(-1, 1)
-        embedded = self.embedding(inputs) # [len, 1, embedding_size]
+        # inputs: [batch, len]
+        inputs = inputs.unsqueeze(-1)
+        # inputs: [batch, len, 1]
+        embedded = self.embedding(inputs)  # [batch, len, 1, embedding_size]
         embedded = self.dropout(embedded)
         output, hidden_state = self.rnn(embedded, hidden_state)
         return output, hidden_state

@@ -46,16 +46,18 @@ def train(input, target, encoder, decoder, encoder_opt, decoder_opt, criterion):
     encoder_opt.zero_grad()
     decoder_opt.zero_grad()
     loss = 0
+    batch_size = input.size(0)
 
     # Get input and target seq lengths
-    target_length = target.size()[0]
+    target_length = target.size()[1]
 
     # Run through encoder
     encoder_hidden = encoder.init_hidden(device)
     encoder_outputs, encoder_hidden = encoder(input, encoder_hidden)
 
     # Prepare input and output variables
-    decoder_input = torch.LongTensor([0]).to(device)
+    # decoder_input = torch.LongTensor([0]).to(device)
+    decoder_input = torch.LongTensor([0] * batch_size).to(device)
     decoder_context = torch.zeros(1, 1, decoder.hidden_size).to(device)
     decoder_hidden = encoder_hidden
 
@@ -75,7 +77,7 @@ def train(input, target, encoder, decoder, encoder_opt, decoder_opt, criterion):
             decoder_output, decoder_context, decoder_hidden, decoder_attention = (
                 decoder(decoder_input, decoder_context, decoder_hidden, encoder_outputs)
             )
-            # decoder_output: [1, tgt_vocab_size]
+            # decoder_output: [batch_size, 1, tgt_vocab_size]
             loss += criterion(decoder_output, target[di])
 
             topv, topi = decoder_output.data.topk(1, dim=1)
@@ -139,16 +141,25 @@ for epoch in range(1, args.n_epochs + 1):
         lr = lr / 2
     encoder_optimizer = optim.Adam(encoder.parameters(), lr=lr)
     decoder_optimizer = optim.Adam(decoder.parameters(), lr=lr)
-    training_pair = etl.tensor_from_pair(
-        random.choice(pairs), input_lang, output_lang, device
-    )
-    input = training_pair[0]
-    target = training_pair[1]
+    batch_size = 128
+    for _ in range(len(pairs) // batch_size):
+        pair_batch = pairs[_ * batch_size : (_ + 1) * batch_size]
+        training_pair_batch = etl.tensor_from_pair(
+            pair_batch, input_lang, output_lang, device
+        )
+        input = training_pair_batch[0]
+        target = training_pair_batch[1]
 
-    # Run the train step
-    loss = train(
-        input, target, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion
-    )
+        # Run the train step
+        loss = train(
+            input,
+            target,
+            encoder,
+            decoder,
+            encoder_optimizer,
+            decoder_optimizer,
+            criterion,
+        )
 
     print(input.shape)
 

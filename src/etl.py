@@ -76,7 +76,14 @@ def tensor_from_sentence(lang, sentence, device="cpu"):
     return tensor
 
 
-def tensor_from_pair(pair, input_lang, output_lang, device="cpu"):
-    input = tensor_from_sentence(input_lang, pair[0], device)
-    target = tensor_from_sentence(output_lang, pair[1], device)
-    return input, target
+def tensor_from_pair(pair_batch, input_lang, output_lang, device="cpu"):
+    # empty e tensor
+    batch_input: list = []
+    batch_target = []
+    for pair in pair_batch:
+        input = tensor_from_sentence(input_lang, pair_batch[0], device)
+        target = tensor_from_sentence(output_lang, pair_batch[1], device)
+        batch_input.append(input)
+        batch_target.append(target)
+
+    return batch_input, batch_target
