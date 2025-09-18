@@ -50,7 +50,7 @@ def train(input, target, encoder, decoder, encoder_opt, decoder_opt, criterion):
     batch_size = len(input)
 
     # Get input and target seq lengths
-    target_length = target.size()[1]
+    target_length = len(target)
 
     # Run through encoder
     encoder_hidden = encoder.init_hidden(device)
