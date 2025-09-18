@@ -164,8 +164,8 @@ for epoch in range(1, args.n_epochs + 1):
         # input is list to -> tensor
         # input = torch.cat(input, dim=1)
         # target = torch.cat(target, dim=1)
-        input = torch.tensor(input)
-        target = torch.tensor(target)
+        input = torch.stack(input, dim=0)
+        target = torch.stack(target, dim=0)
         print(input.shape)
         # Run the train step
         loss = train(
