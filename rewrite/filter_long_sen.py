@@ -1,5 +1,23 @@
 import random
 from itertools import zip_longest
+import unicodedata
+import re
+
+
+# Turns a unicode string to plain ASCII (http://stackoverflow.com/a/518232/2809427)
+def unicode_to_ascii(s):
+    chars = [
+        c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn"
+    ]
+    char_list = "".join(chars)
+    return char_list
+
+
+def normalize_string(s):
+    s = unicode_to_ascii(s.lower().strip())
+    s = re.sub(r"([.!?])", r" \1", s)
+    s = re.sub(r"[^a-zA-Z.!?]+", r" ", s)
+    return s
 
 
 def read_normalized_lines(path):
