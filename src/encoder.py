@@ -38,5 +38,7 @@ class EncoderRNN(nn.Module):
         return output, hidden_state
 
     def init_hidden(self, device):
-        hidden_state = torch.zeros(self.n_layers, 1, self.hidden_size).to(device)
+        hidden_state = torch.zeros(self.n_layers, self.batch_size, self.hidden_size).to(
+            device
+        )
         return hidden_state
