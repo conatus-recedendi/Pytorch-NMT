@@ -108,6 +108,7 @@ input_lang, output_lang, pairs = etl.prepare_data(args.language)
 print(input_lang)
 # Initialize models
 encoder = EncoderRNN(
+    args.batch_size,
     input_lang.n_words,
     args.embedding_size,
     args.hidden_size,
@@ -116,6 +117,7 @@ encoder = EncoderRNN(
 )
 
 decoder = AttentionDecoderRNN(
+    args.batch_size,
     output_lang.n_words,
     args.embedding_size,
     args.hidden_size,

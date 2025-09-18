@@ -6,9 +6,16 @@ class EncoderRNN(nn.Module):
     """Recurrent neural network that encodes a given input sequence."""
 
     def __init__(
-        self, src_vocab_size, embedding_size, hidden_size, n_layers=1, dropout=0.1
+        self,
+        batch_size,
+        src_vocab_size,
+        embedding_size,
+        hidden_size,
+        n_layers=1,
+        dropout=0.1,
     ):
         super(EncoderRNN, self).__init__()
+        self.batch_size = batch_size
         self.src_vocab_size = src_vocab_size
         self.embedding_size = embedding_size
         self.hidden_size = hidden_size

@@ -7,14 +7,18 @@ from attention import Attention
 class AttentionDecoderRNN(nn.Module):
     """Recurrent neural network that makes use of gated recurrent units to translate encoded input using attention."""
 
-    def __init__(self,
-                 tgt_vocab_size,
-                 embedding_size,
-                 hidden_size,
-                 attn_model,
-                 n_layers=1,
-                 dropout=.1):
+    def __init__(
+        self,
+        batch_size,
+        tgt_vocab_size,
+        embedding_size,
+        hidden_size,
+        attn_model,
+        n_layers=1,
+        dropout=0.1,
+    ):
         super(AttentionDecoderRNN, self).__init__()
+        self.batch_size = batch_size
         self.tgt_vocab_size = tgt_vocab_size
         self.embedding_size = embedding_size
         self.hidden_size = hidden_size
@@ -25,7 +29,9 @@ class AttentionDecoderRNN(nn.Module):
         # Define layers
         self.embedding = nn.Embedding(tgt_vocab_size, embedding_size)
         self.dropout = nn.Dropout(dropout)
-        self.gru = nn.GRU(hidden_size + embedding_size, hidden_size, n_layers, dropout=dropout)
+        self.gru = nn.GRU(
+            hidden_size + embedding_size, hidden_size, n_layers, dropout=dropout
+        )
         self.out = nn.Linear(hidden_size * 2, tgt_vocab_size)
 
         # Choose attention model
@@ -55,21 +61,27 @@ class AttentionDecoderRNN(nn.Module):
 
         # Run through RNN
         input = input.view(1, -1)
-        embedded = self.embedding(input) # [1, -1, embedding_size]
+        embedded = self.embedding(input)  # [1, -1, embedding_size]
         embedded = self.dropout(embedded)
 
         #  print(embedded.shape)
         #  print(decoder_context.shape)
-        rnn_input = torch.cat((embedded, decoder_context), 2) # [1, -1, embedding_size + hidden_size]
-        rnn_output, hidden_state = self.gru(rnn_input, hidden_state) # [1, -1, hidden_size]
+        rnn_input = torch.cat(
+            (embedded, decoder_context), 2
+        )  # [1, -1, embedding_size + hidden_size]
+        rnn_output, hidden_state = self.gru(
+            rnn_input, hidden_state
+        )  # [1, -1, hidden_size]
 
         # Calculate attention
         #  print(rnn_output.shape)
         #  print(encoder_outputs.shape)
         attention_weights = self.attention(rnn_output.squeeze(0), encoder_outputs)
         #  print(attention_weights.shape)
-        context = attention_weights.bmm(encoder_outputs.transpose(0, 1)) # [-1, 1, hidden_size]
-        context = context.transpose(0, 1) # [1, -1, hidden_size]
+        context = attention_weights.bmm(
+            encoder_outputs.transpose(0, 1)
+        )  # [-1, 1, hidden_size]
+        context = context.transpose(0, 1)  # [1, -1, hidden_size]
 
         # Predict output
         output = F.log_softmax(self.out(torch.cat((rnn_output, context), 2)), dim=2)
