@@ -69,6 +69,7 @@ def indexes_from_sentence(lang, sentence):
 
 
 def tensor_from_sentence(lang, sentence, device="cpu"):
+    print(sentence)
     indexes = indexes_from_sentence(lang, sentence)
     indexes.append(Language.eos_token)
     tensor = torch.LongTensor(indexes).view(-1, 1).to(device)
