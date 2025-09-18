@@ -144,7 +144,7 @@ for epoch in range(1, args.n_epochs + 1):
     encoder_optimizer = optim.Adam(encoder.parameters(), lr=lr)
     decoder_optimizer = optim.Adam(decoder.parameters(), lr=lr)
     batch_size = 128
-    print("hi")
+    print("hi\n")
 
     for _ in range(len(pairs) // batch_size):
         progress = (_ + 1) / ((len(pairs) // batch_size) * epoch) * 100
