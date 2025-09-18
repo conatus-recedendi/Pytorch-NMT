@@ -162,7 +162,7 @@ for epoch in range(1, args.n_epochs + 1):
         )
         input = training_pair_batch[0]
         target = training_pair_batch[1]
-        print(input)
+        # print(input)
         # input is list to -> tensor
         input = torch.cat(input, dim=1)
         target = torch.cat(target, dim=1)
