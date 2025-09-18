@@ -10,6 +10,7 @@ import torch.optim as optim
 from attention_decoder import AttentionDecoderRNN
 from encoder import EncoderRNN
 from language import Language
+from torch.nn.utils.rnn import pad_sequence
 
 # Parse argument for language to train
 parser = argparse.ArgumentParser()
@@ -163,8 +164,10 @@ for epoch in range(1, args.n_epochs + 1):
         target = training_pair_batch[1]
         print(input)
         # input is list to -> tensor
-        # input = torch.cat(input, dim=1)
-        # target = torch.cat(target, dim=1)
+        input = torch.cat(input, dim=1)
+        target = torch.cat(target, dim=1)
+        input = pad_sequence(input, batch_first=True)
+        target = pad_sequence(target, batch_first=True)
         input = torch.stack(input, dim=0)
         target = torch.stack(target, dim=0)
         print(input.shape)
