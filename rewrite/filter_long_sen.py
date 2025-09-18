@@ -90,8 +90,8 @@ def filter_by_length_strict(
         out_tgt, "w", encoding="utf-8", newline="\n"
     ) as ftgt:
         for s, t in filtered_pairs:
-            fsrc.write(s + "\n")
-            ftgt.write(t + "\n")
+            fsrc.write(normalize_string(s) + "\n")
+            ftgt.write(normalize_string(t) + "\n")
 
 
 if __name__ == "__main__":

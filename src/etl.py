@@ -44,11 +44,10 @@ def read_languages(lang):
     doc_en = open("./rewrite/train.len50.en", "rb")
     lines_en = doc_en.read().strip().split(b"\n")
     lines_en = [l.decode("utf-8", errors="strict") for l in lines_en]
+    print("loaded")
 
-    pairs = [
-        [helpers.normalize_string(s), helpers.normalize_string(t)]
-        for s, t in zip(lines_en, lines)
-    ]
+    pairs = [[s, t] for s, t in zip(lines_en, lines)]
+    print("read %s sentence pairs" % len(pairs))
 
     # Transform the data and initialize language instances
     # pairs = [[helpers.normalize_string(s) for s in l.split("\t")] for l in lines]
