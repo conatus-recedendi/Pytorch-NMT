@@ -46,7 +46,8 @@ def train(input, target, encoder, decoder, encoder_opt, decoder_opt, criterion):
     encoder_opt.zero_grad()
     decoder_opt.zero_grad()
     loss = 0
-    batch_size = input.size(0)
+    # input is listattribute 'size'
+    batch_size = len(input)
 
     # Get input and target seq lengths
     target_length = target.size()[1]
