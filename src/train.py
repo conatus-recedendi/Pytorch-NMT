@@ -57,13 +57,15 @@ def train(input, target, encoder, decoder, encoder_opt, decoder_opt, criterion):
     # Run through encoder
     encoder_hidden = encoder.init_hidden(device)
     print(input.shape, encoder_hidden.shape)
+    input = input.permute(1, 0, 2)  # [seq_len, batch_size, 1]
     encoder_outputs, encoder_hidden = encoder(input, encoder_hidden)
 
     # Prepare input and output variables
     # decoder_input = torch.LongTensor([0]).to(device)
-    decoder_input = torch.LongTensor([0] * batch_size).to(device)
+    decoder_input = torch.LongTensor(batch_size, 1).fill_(0).to(device)
     #
-    decoder_context = torch.zeros(batch_size, 1, decoder.hidden_size).to(device)
+    decoder_context = torch.zeros(batch_size, decoder.hidden_size).to(device)
+
     decoder_hidden = encoder_hidden
 
     # Scheduled sampling
@@ -74,7 +76,9 @@ def train(input, target, encoder, decoder, encoder_opt, decoder_opt, criterion):
             decoder_output, decoder_context, decoder_hidden, decoder_attention = (
                 decoder(decoder_input, decoder_context, decoder_hidden, encoder_outputs)
             )
-            loss += criterion(decoder_output, target[di])
+            # loss += criterion(decoder_output, target[di])
+            loss += criterion(decoder_output.squeeze(1), target[di])
+
             decoder_input = target[di]
     else:
         # Use previous prediction as next input
@@ -83,7 +87,8 @@ def train(input, target, encoder, decoder, encoder_opt, decoder_opt, criterion):
                 decoder(decoder_input, decoder_context, decoder_hidden, encoder_outputs)
             )
             # decoder_output: [batch_size, 1, tgt_vocab_size]
-            loss += criterion(decoder_output, target[di])
+            # loss += criterion(decoder_output, target[di])
+            loss += criterion(decoder_output.squeeze(1), target[di])
 
             topv, topi = decoder_output.data.topk(1, dim=1)
 
