@@ -50,7 +50,7 @@ def train(
     # Initialize optimizers and loss
     encoder_opt.zero_grad()
     decoder_opt.zero_grad()
-    loss = 0
+    loss = torch.tensor(0.0, device=device, requires_grad=True)  # Initialize properly
     # input is listattribute 'size'
     batch_size = input.size(0)
 
@@ -99,19 +99,40 @@ def train(
         loss = criterion(decoder_outputs_flat, target_flat)
     else:
         # Use previous prediction as next input
+        loss_sum = 0
+        valid_steps = 0
         for di in range(target_length):
             decoder_output, decoder_context, decoder_hidden, decoder_attention = (
                 decoder(decoder_input, decoder_context, decoder_hidden, encoder_outputs)
             )
             target_di = target[:, di].squeeze()
-            loss += criterion(decoder_output, target_di)
+
+            # Check for NaN in intermediate values
+            if torch.isnan(decoder_output).any():
+                print(f"NaN in decoder_output at step {di}")
+                return float("inf")
+
+            step_loss = criterion(decoder_output, target_di)
+
+            if torch.isnan(step_loss):
+                print(f"NaN in step_loss at step {di}")
+                print(
+                    f"decoder_output range: [{decoder_output.min():.4f}, {decoder_output.max():.4f}]"
+                )
+                print(f"target_di: {target_di}")
+                return float("inf")
+
+            loss_sum += step_loss
+            valid_steps += 1
 
             topv, topi = decoder_output.data.topk(1, dim=1)
             decoder_input = topi  # [batch_size, 1]
 
-            # Check if all sequences have reached EOS token (simplified)
-            if (topi == Language.eos_token).all():
-                break
+            # Early stopping is problematic in batch processing - remove for now
+            # if (topi == Language.eos_token).all():
+            #     break
+
+        loss = loss_sum / valid_steps if valid_steps > 0 else loss_sum
 
     # Backpropagation
     if scaler is not None:
@@ -137,7 +158,7 @@ def train(
         print(f"Target shape: {target.shape}, Input shape: {input.shape}")
         return float("inf")
 
-    return loss.item() / target_length
+    return loss.item()  # Don't divide by target_length again
 
 
 input_lang, output_lang, pairs = etl.prepare_data(args.language)
@@ -171,8 +192,8 @@ encoder_optimizer = optim.Adam(encoder.parameters(), lr=args.lr)
 decoder_optimizer = optim.Adam(decoder.parameters(), lr=args.lr)
 criterion = nn.NLLLoss(ignore_index=0)  # Ignore padding tokens
 
-# Initialize mixed precision scaler
-scaler = GradScaler() if device.type == "cuda" else None
+# Initialize mixed precision scaler - Disable for debugging
+scaler = None  # GradScaler() if device.type == "cuda" else None
 
 
 # Keep track of time elapsed and running averages
