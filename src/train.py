@@ -245,7 +245,8 @@ for epoch in range(1, args.n_epochs + 1):
 
         epoch_loss += batch_loss
         batch_count += 1
-        avg_loss = epoch_loss / batch_count
+        # avg_loss = epoch_loss / batch_count
+        avg_loss = batch_loss
     # print(input.shape)
 
     # Keep track of loss
