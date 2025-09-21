@@ -157,6 +157,7 @@ plot_loss_total = 0  # Reset every plot_every
 # Begin training
 lr = args.lr
 progress = 0.0
+avg_loss = 0.0
 for epoch in range(1, args.n_epochs + 1):
     # Get training data for this cycle
     if epoch > 5:
@@ -170,7 +171,6 @@ for epoch in range(1, args.n_epochs + 1):
     # print("hi\n")
     epoch_loss = 0.0
     batch_count = 0
-    avg_loss = 0.0
 
     for _ in range(len(pairs) // batch_size):
         # Print progress every 100 batches to reduce I/O overhead
