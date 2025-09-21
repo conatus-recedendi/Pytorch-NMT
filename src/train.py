@@ -265,7 +265,7 @@ for epoch in range(1, args.n_epochs + 1):
         avg_loss = batch_loss
 
         # Check for problematic loss values
-        if torch.isnan(torch.tensor(batch_loss)) or batch_loss > 100:
+        if torch.isnan(torch.tensor(batch_loss)):
             print(f"Problematic loss detected: {batch_loss}")
             print(f"Learning rate: {encoder_optimizer.param_groups[0]['lr']}")
             break
