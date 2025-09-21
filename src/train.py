@@ -57,7 +57,7 @@ def train(input, target, encoder, decoder, encoder_opt, decoder_opt, criterion):
     # Run through encoder
     encoder_hidden = encoder.init_hidden(device)
     input = input.squeeze(-1)  # [batch_size, seq_len] - remove the last dimension
-    print(input.shape, encoder_hidden.shape)
+    # print(input.shape, encoder_hidden.shape)
     encoder_outputs, encoder_hidden = encoder(input, encoder_hidden)
 
     # Prepare input and output variables
@@ -166,9 +166,15 @@ for epoch in range(1, args.n_epochs + 1):
 
     for _ in range(len(pairs) // batch_size):
         progress = (_ + 1) / ((len(pairs) // batch_size) * epoch) * 100
-
+        expected_time_sec = (
+            (time.time() - start)
+            / (_ + 1)
+            * ((len(pairs) // batch_size) * args.n_epochs - (_ + 1))
+        )
+        expected_time_str = helpers.format_time(expected_time_sec)
         print(
-            "%cEpoch: %d/%d, Progress: %f%%" % (13, epoch, args.n_epochs, progress),
+            "%cEpoch: %d/%d, Progress: %f%%, Expected Time: %s"
+            % (13, epoch, args.n_epochs, progress, expected_time_str),
             end="\r",
         )
         sys.stdout.flush()
