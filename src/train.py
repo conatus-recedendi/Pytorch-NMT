@@ -64,7 +64,7 @@ def train(input, target, encoder, decoder, encoder_opt, decoder_opt, criterion):
     # decoder_input = torch.LongTensor([0]).to(device)
     decoder_input = torch.LongTensor(batch_size, 1).fill_(0).to(device)
     #
-    decoder_context = torch.zeros(batch_size, decoder.hidden_size).to(device)
+    decoder_context = torch.zeros(1, batch_size, decoder.hidden_size).to(device)
 
     decoder_hidden = encoder_hidden
 
@@ -77,24 +77,25 @@ def train(input, target, encoder, decoder, encoder_opt, decoder_opt, criterion):
                 decoder(decoder_input, decoder_context, decoder_hidden, encoder_outputs)
             )
             # loss += criterion(decoder_output, target[di])
-            loss += criterion(decoder_output.squeeze(1), target[di])
+            loss += criterion(decoder_output, target[:, di])
 
-            decoder_input = target[di]
+            decoder_input = target[:, di].unsqueeze(1)  # [batch_size, 1]
     else:
         # Use previous prediction as next input
         for di in range(target_length):
             decoder_output, decoder_context, decoder_hidden, decoder_attention = (
                 decoder(decoder_input, decoder_context, decoder_hidden, encoder_outputs)
             )
-            # decoder_output: [batch_size, 1, tgt_vocab_size]
+            # decoder_output: [batch_size, tgt_vocab_size]
             # loss += criterion(decoder_output, target[di])
-            loss += criterion(decoder_output.squeeze(1), target[di])
+            loss += criterion(decoder_output, target[:, di])
 
             topv, topi = decoder_output.data.topk(1, dim=1)
 
-            decoder_input = topi
+            decoder_input = topi  # [batch_size, 1]
 
-            if topi.item() == Language.eos_token:
+            # Check if all sequences have reached EOS token (simplified)
+            if (topi == Language.eos_token).all():
                 break
 
     # Backpropagation
