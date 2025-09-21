@@ -11,6 +11,7 @@ from attention_decoder import AttentionDecoderRNN
 from encoder import EncoderRNN
 from language import Language
 from torch.nn.utils.rnn import pad_sequence
+from torch.cuda.amp import autocast, GradScaler
 
 # Parse argument for language to train
 parser = argparse.ArgumentParser()
@@ -43,7 +44,9 @@ print("device: ", device)
 # helpers.validate_language(args.language)
 
 
-def train(input, target, encoder, decoder, encoder_opt, decoder_opt, criterion):
+def train(
+    input, target, encoder, decoder, encoder_opt, decoder_opt, criterion, scaler=None
+):
     # Initialize optimizers and loss
     encoder_opt.zero_grad()
     decoder_opt.zero_grad()
@@ -55,7 +58,7 @@ def train(input, target, encoder, decoder, encoder_opt, decoder_opt, criterion):
     target_length = target.size(1)
 
     # Run through encoder
-    encoder_hidden = encoder.init_hidden(device)
+    encoder_hidden = encoder.init_hidden(device, batch_size)  # Pass actual batch size
     input = input.squeeze(-1)  # [batch_size, seq_len] - remove the last dimension
     # print(input.shape, encoder_hidden.shape)
     encoder_outputs, encoder_hidden = encoder(input, encoder_hidden)
@@ -70,34 +73,38 @@ def train(input, target, encoder, decoder, encoder_opt, decoder_opt, criterion):
 
     # Scheduled sampling
     use_teacher_forcing = random.random() < args.teacher_forcing_ratio
+
+    # Pre-allocate tensors for better performance
+    all_decoder_outputs = []
+
     if use_teacher_forcing:
         # Feed target as the next input
         for di in range(target_length):
             decoder_output, decoder_context, decoder_hidden, decoder_attention = (
                 decoder(decoder_input, decoder_context, decoder_hidden, encoder_outputs)
             )
-            # loss += criterion(decoder_output, target[di])
-            target_di = target[
-                :, di
-            ].squeeze()  # Remove extra dimensions to get [batch_size]
-            loss += criterion(decoder_output, target_di)
-
+            all_decoder_outputs.append(decoder_output)
             decoder_input = target[:, di].unsqueeze(1)  # [batch_size, 1]
+
+        # Compute loss for all timesteps at once
+        decoder_outputs_tensor = torch.stack(
+            all_decoder_outputs, dim=1
+        )  # [batch_size, seq_len, vocab_size]
+        decoder_outputs_flat = decoder_outputs_tensor.view(
+            -1, decoder_outputs_tensor.size(-1)
+        )
+        target_flat = target.view(-1)
+        loss = criterion(decoder_outputs_flat, target_flat)
     else:
         # Use previous prediction as next input
         for di in range(target_length):
             decoder_output, decoder_context, decoder_hidden, decoder_attention = (
                 decoder(decoder_input, decoder_context, decoder_hidden, encoder_outputs)
             )
-            # decoder_output: [batch_size, tgt_vocab_size]
-            # loss += criterion(decoder_output, target[di])
-            target_di = target[
-                :, di
-            ].squeeze()  # Remove extra dimensions to get [batch_size]
+            target_di = target[:, di].squeeze()
             loss += criterion(decoder_output, target_di)
 
             topv, topi = decoder_output.data.topk(1, dim=1)
-
             decoder_input = topi  # [batch_size, 1]
 
             # Check if all sequences have reached EOS token (simplified)
@@ -105,13 +112,17 @@ def train(input, target, encoder, decoder, encoder_opt, decoder_opt, criterion):
                 break
 
     # Backpropagation
-    loss.backward()
-    #  print(list(encoder.parameters()))
-    #  print(args.clip)
-    encoder_grad_norm = nn.utils.clip_grad_norm_(encoder.parameters(), args.clip)
-    decoder_grad_norm = nn.utils.clip_grad_norm_(decoder.parameters(), args.clip)
-    encoder_opt.step()
-    decoder_opt.step()
+    if scaler is not None:
+        scaler.scale(loss).backward()
+        scaler.step(encoder_opt)
+        scaler.step(decoder_opt)
+        scaler.update()
+    else:
+        loss.backward()
+        encoder_grad_norm = nn.utils.clip_grad_norm_(encoder.parameters(), args.clip)
+        decoder_grad_norm = nn.utils.clip_grad_norm_(decoder.parameters(), args.clip)
+        encoder_opt.step()
+        decoder_opt.step()
 
     return loss.item() / target_length
 
@@ -147,6 +158,9 @@ encoder_optimizer = optim.Adam(encoder.parameters(), lr=args.lr)
 decoder_optimizer = optim.Adam(decoder.parameters(), lr=args.lr)
 criterion = nn.NLLLoss()
 
+# Initialize mixed precision scaler
+scaler = GradScaler() if device.type == "cuda" else None
+
 
 # Keep track of time elapsed and running averages
 start = time.time()
@@ -174,7 +188,7 @@ for epoch in range(1, args.n_epochs + 1):
 
     for _ in range(len(pairs) // batch_size):
         # Print progress every 100 batches to reduce I/O overhead
-        if _ % 1 == 0:
+        if _ % 100 == 0:
             progress = (_ + 1) / ((len(pairs) // batch_size) * epoch) * 100
             expected_time_sec = (
                 (time.time() - start)
@@ -205,15 +219,29 @@ for epoch in range(1, args.n_epochs + 1):
         target = pad_sequence(target, batch_first=True)
 
         # Run the train step
-        batch_loss = train(
-            input,
-            target,
-            encoder,
-            decoder,
-            encoder_optimizer,
-            decoder_optimizer,
-            criterion,
-        )
+        if scaler is not None:
+            with autocast():
+                batch_loss = train(
+                    input,
+                    target,
+                    encoder,
+                    decoder,
+                    encoder_optimizer,
+                    decoder_optimizer,
+                    criterion,
+                    scaler,
+                )
+        else:
+            batch_loss = train(
+                input,
+                target,
+                encoder,
+                decoder,
+                encoder_optimizer,
+                decoder_optimizer,
+                criterion,
+                None,
+            )
 
         epoch_loss += batch_loss
         batch_count += 1
