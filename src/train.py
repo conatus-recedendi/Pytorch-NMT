@@ -56,8 +56,8 @@ def train(input, target, encoder, decoder, encoder_opt, decoder_opt, criterion):
 
     # Run through encoder
     encoder_hidden = encoder.init_hidden(device)
+    input = input.squeeze(-1)  # [batch_size, seq_len] - remove the last dimension
     print(input.shape, encoder_hidden.shape)
-    input = input.permute(1, 0, 2)  # [seq_len, batch_size, 1]
     encoder_outputs, encoder_hidden = encoder(input, encoder_hidden)
 
     # Prepare input and output variables

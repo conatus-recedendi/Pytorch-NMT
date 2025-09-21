@@ -21,19 +21,18 @@ class EncoderRNN(nn.Module):
         self.hidden_size = hidden_size
         self.n_layers = n_layers
 
-        self.embedding = nn.Embedding(src_vocab_size, hidden_size)
+        self.embedding = nn.Embedding(src_vocab_size, embedding_size)
         self.dropout = nn.Dropout(dropout)
-        self.rnn = nn.GRU(hidden_size, hidden_size, n_layers)
+        self.rnn = nn.GRU(embedding_size, hidden_size, n_layers)
 
     def forward(self, inputs, hidden_state):
         """
         inputs: [batch, len]
         """
         # inputs: [batch, len]
-        inputs = inputs.unsqueeze(-1)
-        # inputs: [batch, len, 1]
-        embedded = self.embedding(inputs)  # [batch, len, 1, embedding_size]
+        embedded = self.embedding(inputs)  # [batch, len, embedding_size]
         embedded = self.dropout(embedded)
+        embedded = embedded.transpose(0, 1)  # [len, batch, embedding_size] for GRU
         output, hidden_state = self.rnn(embedded, hidden_state)
         return output, hidden_state
 
