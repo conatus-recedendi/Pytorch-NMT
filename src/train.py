@@ -113,14 +113,6 @@ def train(input, target, encoder, decoder, encoder_opt, decoder_opt, criterion):
     encoder_opt.step()
     decoder_opt.step()
 
-    # Debug: print loss information
-    print(
-        f"\nDebug - Raw loss: {loss.item():.4f}, Target length: {target_length}, Final loss: {loss.item() / target_length:.4f}"
-    )
-    print(
-        f"Encoder grad norm: {encoder_grad_norm:.4f}, Decoder grad norm: {decoder_grad_norm:.4f}"
-    )
-
     return loss.item() / target_length
 
 
@@ -129,7 +121,7 @@ input_lang, output_lang, pairs = etl.prepare_data(args.language)
 print(input_lang)
 # Initialize models
 encoder = EncoderRNN(
-    args.batch_size,
+    128,  # max batch size for init_hidden
     input_lang.n_words,
     args.embedding_size,
     args.hidden_size,
@@ -138,7 +130,7 @@ encoder = EncoderRNN(
 )
 
 decoder = AttentionDecoderRNN(
-    args.batch_size,
+    128,  # max batch size for initialization
     output_lang.n_words,
     args.embedding_size,
     args.hidden_size,
@@ -151,6 +143,8 @@ encoder = encoder.to(device)
 decoder = decoder.to(device)
 
 # Initialize optimizers and criterion
+encoder_optimizer = optim.Adam(encoder.parameters(), lr=args.lr)
+decoder_optimizer = optim.Adam(decoder.parameters(), lr=args.lr)
 criterion = nn.NLLLoss()
 
 
@@ -166,47 +160,51 @@ progress = 0.0
 for epoch in range(1, args.n_epochs + 1):
     # Get training data for this cycle
     if epoch > 5:
-        lr = lr / 2
-    encoder_optimizer = optim.Adam(encoder.parameters(), lr=lr)
-    decoder_optimizer = optim.Adam(decoder.parameters(), lr=lr)
-    batch_size = 10  # Changed from 128 to 10 for debugging
+        lr = args.lr / (2 ** (epoch - 5))  # More efficient learning rate decay
+        for param_group in encoder_optimizer.param_groups:
+            param_group["lr"] = lr
+        for param_group in decoder_optimizer.param_groups:
+            param_group["lr"] = lr
+
+    batch_size = 128  # Restore larger batch size for efficiency
     # print("hi\n")
     epoch_loss = 0.0
     batch_count = 0
+    avg_loss = 0.0
 
     for _ in range(len(pairs) // batch_size):
-        progress = (_ + 1) / ((len(pairs) // batch_size) * epoch) * 100
-        expected_time_sec = (
-            (time.time() - start)
-            / (_ + 1)
-            * ((len(pairs) // batch_size) * args.n_epochs - (_ + 1))
-        )
-        expected_time_str = helpers.format_time(expected_time_sec)
-        print(
-            "%cEpoch: %d/%d, Loss: %f, Progress: %f%%, Expected Time: %s"
-            % (13, epoch, args.n_epochs, avg_loss, progress, expected_time_str),
-            end="\r",
-        )
-        sys.stdout.flush()
+        # Print progress every 100 batches to reduce I/O overhead
+        if _ % 100 == 0:
+            progress = (_ + 1) / ((len(pairs) // batch_size) * epoch) * 100
+            expected_time_sec = (
+                (time.time() - start)
+                / (_ + 1)
+                * ((len(pairs) // batch_size) * args.n_epochs - (_ + 1))
+            )
+            expected_time_str = helpers.format_time(expected_time_sec)
+            print(
+                "%cEpoch: %d/%d, Loss: %f, Progress: %f%%, Expected Time: %s"
+                % (
+                    13,
+                    epoch,
+                    args.n_epochs,
+                    avg_loss if batch_count > 0 else 0,
+                    progress,
+                    expected_time_str,
+                ),
+                end="\r",
+            )
+            sys.stdout.flush()
         pair_batch = pairs[_ * batch_size : (_ + 1) * batch_size]
-        time_etl_tensor_start = time.time()
-        training_pair_batch = etl.tensor_from_pair(
+        training_pair_batch = etl.tensor_from_pair_batch(
             pair_batch, input_lang, output_lang, device
         )
-        time_etl_tensor_end = time.time()
         input = training_pair_batch[0]
         target = training_pair_batch[1]
-        # print(input)
-        # input is list to -> tensor
-        # input = torch.cat(input, dim=1)
-        # target = torch.cat(target, dim=1)
         input = pad_sequence(input, batch_first=True)
         target = pad_sequence(target, batch_first=True)
-        # input = torch.stack(input, dim=0)
-        # target = torch.stack(target, dim=0)
-        # print(input.shape)
+
         # Run the train step
-        time_train_start = time.time()
         batch_loss = train(
             input,
             target,
@@ -216,20 +214,10 @@ for epoch in range(1, args.n_epochs + 1):
             decoder_optimizer,
             criterion,
         )
-        time_train_end = time.time()
 
         epoch_loss += batch_loss
         batch_count += 1
         avg_loss = epoch_loss / batch_count
-
-        print(
-            "Time taken for training step: %.4f seconds"
-            % (time_train_end - time_train_start)
-        )
-        print(
-            "Time taken for ETL and tensor conversion: %.4f seconds"
-            % (time_etl_tensor_end - time_etl_tensor_start)
-        )
     # print(input.shape)
 
     # Keep track of loss

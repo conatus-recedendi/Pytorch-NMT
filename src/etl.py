@@ -87,3 +87,17 @@ def tensor_from_pair(pair_batch, input_lang, output_lang, device="cpu"):
         batch_target.append(target)
 
     return batch_input, batch_target
+
+
+def tensor_from_pair_batch(pair_batch, input_lang, output_lang, device="cpu"):
+    """Optimized batch processing for tensor conversion"""
+    inputs = []
+    targets = []
+
+    for pair in pair_batch:
+        input_tensor = tensor_from_sentence(input_lang, pair[0], device)
+        target_tensor = tensor_from_sentence(output_lang, pair[1], device)
+        inputs.append(input_tensor)
+        targets.append(target_tensor)
+
+    return inputs, targets
