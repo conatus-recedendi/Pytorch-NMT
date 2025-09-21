@@ -94,6 +94,8 @@ def train(
             -1, decoder_outputs_tensor.size(-1)
         )
         target_flat = target.view(-1)
+
+        # NLLLoss with ignore_index will handle padding automatically
         loss = criterion(decoder_outputs_flat, target_flat)
     else:
         # Use previous prediction as next input
@@ -114,6 +116,11 @@ def train(
     # Backpropagation
     if scaler is not None:
         scaler.scale(loss).backward()
+        # Apply gradient clipping before stepping
+        scaler.unscale_(encoder_opt)
+        scaler.unscale_(decoder_opt)
+        nn.utils.clip_grad_norm_(encoder.parameters(), args.clip)
+        nn.utils.clip_grad_norm_(decoder.parameters(), args.clip)
         scaler.step(encoder_opt)
         scaler.step(decoder_opt)
         scaler.update()
@@ -123,6 +130,12 @@ def train(
         decoder_grad_norm = nn.utils.clip_grad_norm_(decoder.parameters(), args.clip)
         encoder_opt.step()
         decoder_opt.step()
+
+    # Check for NaN
+    if torch.isnan(loss):
+        print(f"NaN detected! Target length: {target_length}, Loss: {loss.item()}")
+        print(f"Target shape: {target.shape}, Input shape: {input.shape}")
+        return float("inf")
 
     return loss.item() / target_length
 
@@ -156,7 +169,7 @@ decoder = decoder.to(device)
 # Initialize optimizers and criterion
 encoder_optimizer = optim.Adam(encoder.parameters(), lr=args.lr)
 decoder_optimizer = optim.Adam(decoder.parameters(), lr=args.lr)
-criterion = nn.NLLLoss()
+criterion = nn.NLLLoss(ignore_index=0)  # Ignore padding tokens
 
 # Initialize mixed precision scaler
 scaler = GradScaler() if device.type == "cuda" else None
@@ -189,11 +202,14 @@ for epoch in range(1, args.n_epochs + 1):
     for _ in range(len(pairs) // batch_size):
         # Print progress every 100 batches to reduce I/O overhead
         if _ % 1 == 0:
-            progress = (_ + 1) / ((len(pairs) // batch_size) * args.n_epochs) * 100
+            progress = (
+                ((_ + 1)) / ((len(pairs) // batch_size) * args.n_epochs)
+                + (epoch - 1) / args.n_epochs
+            ) * 100
             expected_time_sec = (
                 (time.time() - start)
                 / (_ + 1)
-                * ((len(pairs) // batch_size) * args.n_epochs - (_ + 1))
+                * ((len(pairs) // batch_size) * args.n_epochs - (_ + 1) * epoch)
             )
             expected_time_str = helpers.format_time(expected_time_sec)
             print(
@@ -247,6 +263,12 @@ for epoch in range(1, args.n_epochs + 1):
         batch_count += 1
         # avg_loss = epoch_loss / batch_count
         avg_loss = batch_loss
+
+        # Check for problematic loss values
+        if torch.isnan(torch.tensor(batch_loss)) or batch_loss > 100:
+            print(f"Problematic loss detected: {batch_loss}")
+            print(f"Learning rate: {encoder_optimizer.param_groups[0]['lr']}")
+            break
     # print(input.shape)
 
     # Keep track of loss

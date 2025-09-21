@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import math
 
 
 class Attention(nn.Module):
@@ -67,9 +68,12 @@ class Attention(nn.Module):
                 self.other.unsqueeze(0).expand(batch_size, -1, -1).transpose(1, 2),
             ).squeeze(2)
 
-        return F.softmax(energies, dim=1).unsqueeze(1)  # [batch_size, 1, seq_len]
+        # Apply temperature scaling for numerical stability
+        energies = energies / math.sqrt(self.hidden_size)
 
-    def _score(self, hidden, encoder_output):
+        return F.softmax(energies, dim=1).unsqueeze(
+            1
+        )  # [batch_size, 1, seq_len]    def _score(self, hidden, encoder_output):
         """Calculate the relevance of a particular encoder output in respect to the decoder hidden."""
 
         if self.method == "dot":
