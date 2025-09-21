@@ -77,7 +77,10 @@ def train(input, target, encoder, decoder, encoder_opt, decoder_opt, criterion):
                 decoder(decoder_input, decoder_context, decoder_hidden, encoder_outputs)
             )
             # loss += criterion(decoder_output, target[di])
-            loss += criterion(decoder_output, target[:, di])
+            target_di = target[
+                :, di
+            ].squeeze()  # Remove extra dimensions to get [batch_size]
+            loss += criterion(decoder_output, target_di)
 
             decoder_input = target[:, di].unsqueeze(1)  # [batch_size, 1]
     else:
@@ -88,7 +91,10 @@ def train(input, target, encoder, decoder, encoder_opt, decoder_opt, criterion):
             )
             # decoder_output: [batch_size, tgt_vocab_size]
             # loss += criterion(decoder_output, target[di])
-            loss += criterion(decoder_output, target[:, di])
+            target_di = target[
+                :, di
+            ].squeeze()  # Remove extra dimensions to get [batch_size]
+            loss += criterion(decoder_output, target_di)
 
             topv, topi = decoder_output.data.topk(1, dim=1)
 
