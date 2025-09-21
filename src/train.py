@@ -163,6 +163,7 @@ for epoch in range(1, args.n_epochs + 1):
     decoder_optimizer = optim.Adam(decoder.parameters(), lr=lr)
     batch_size = 128
     print("hi\n")
+    loss = 0.0
 
     for _ in range(len(pairs) // batch_size):
         progress = (_ + 1) / ((len(pairs) // batch_size) * epoch) * 100
@@ -173,8 +174,8 @@ for epoch in range(1, args.n_epochs + 1):
         )
         expected_time_str = helpers.format_time(expected_time_sec)
         print(
-            "%cEpoch: %d/%d, Progress: %f%%, Expected Time: %s"
-            % (13, epoch, args.n_epochs, progress, expected_time_str),
+            "%cEpoch: %d/%d, Loss: %f, Progress: %f%%, Expected Time: %s"
+            % (13, epoch, loss, args.n_epochs, progress, expected_time_str),
             end="\r",
         )
         sys.stdout.flush()
