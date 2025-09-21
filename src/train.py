@@ -108,10 +108,18 @@ def train(input, target, encoder, decoder, encoder_opt, decoder_opt, criterion):
     loss.backward()
     #  print(list(encoder.parameters()))
     #  print(args.clip)
-    _ = nn.utils.clip_grad_norm_(encoder.parameters(), args.clip)
-    _ = nn.utils.clip_grad_norm_(decoder.parameters(), args.clip)
+    encoder_grad_norm = nn.utils.clip_grad_norm_(encoder.parameters(), args.clip)
+    decoder_grad_norm = nn.utils.clip_grad_norm_(decoder.parameters(), args.clip)
     encoder_opt.step()
     decoder_opt.step()
+
+    # Debug: print loss information
+    print(
+        f"\nDebug - Raw loss: {loss.item():.4f}, Target length: {target_length}, Final loss: {loss.item() / target_length:.4f}"
+    )
+    print(
+        f"Encoder grad norm: {encoder_grad_norm:.4f}, Decoder grad norm: {decoder_grad_norm:.4f}"
+    )
 
     return loss.item() / target_length
 
@@ -161,9 +169,10 @@ for epoch in range(1, args.n_epochs + 1):
         lr = lr / 2
     encoder_optimizer = optim.Adam(encoder.parameters(), lr=lr)
     decoder_optimizer = optim.Adam(decoder.parameters(), lr=lr)
-    batch_size = 128
+    batch_size = 10  # Changed from 128 to 10 for debugging
     # print("hi\n")
-    loss = 0.0
+    epoch_loss = 0.0
+    batch_count = 0
 
     for _ in range(len(pairs) // batch_size):
         progress = (_ + 1) / ((len(pairs) // batch_size) * epoch) * 100
@@ -175,7 +184,7 @@ for epoch in range(1, args.n_epochs + 1):
         expected_time_str = helpers.format_time(expected_time_sec)
         print(
             "%cEpoch: %d/%d, Loss: %f, Progress: %f%%, Expected Time: %s"
-            % (13, epoch, loss, args.n_epochs, progress, expected_time_str),
+            % (13, epoch, args.n_epochs, avg_loss, progress, expected_time_str),
             end="\r",
         )
         sys.stdout.flush()
@@ -198,7 +207,7 @@ for epoch in range(1, args.n_epochs + 1):
         # print(input.shape)
         # Run the train step
         time_train_start = time.time()
-        loss = train(
+        batch_loss = train(
             input,
             target,
             encoder,
@@ -208,6 +217,10 @@ for epoch in range(1, args.n_epochs + 1):
             criterion,
         )
         time_train_end = time.time()
+
+        epoch_loss += batch_loss
+        batch_count += 1
+        avg_loss = epoch_loss / batch_count
 
         print(
             "Time taken for training step: %.4f seconds"
@@ -220,8 +233,8 @@ for epoch in range(1, args.n_epochs + 1):
     # print(input.shape)
 
     # Keep track of loss
-    print_loss_total += loss
-    plot_loss_total += loss
+    print_loss_total += avg_loss
+    plot_loss_total += avg_loss
 
     if epoch == 0:
         continue
