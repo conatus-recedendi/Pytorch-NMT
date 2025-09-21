@@ -162,7 +162,7 @@ for epoch in range(1, args.n_epochs + 1):
     encoder_optimizer = optim.Adam(encoder.parameters(), lr=lr)
     decoder_optimizer = optim.Adam(decoder.parameters(), lr=lr)
     batch_size = 128
-    print("hi\n")
+    # print("hi\n")
     loss = 0.0
 
     for _ in range(len(pairs) // batch_size):
@@ -180,9 +180,11 @@ for epoch in range(1, args.n_epochs + 1):
         )
         sys.stdout.flush()
         pair_batch = pairs[_ * batch_size : (_ + 1) * batch_size]
+        time_etl_tensor_start = time.time()
         training_pair_batch = etl.tensor_from_pair(
             pair_batch, input_lang, output_lang, device
         )
+        time_etl_tensor_end = time.time()
         input = training_pair_batch[0]
         target = training_pair_batch[1]
         # print(input)
@@ -193,8 +195,9 @@ for epoch in range(1, args.n_epochs + 1):
         target = pad_sequence(target, batch_first=True)
         # input = torch.stack(input, dim=0)
         # target = torch.stack(target, dim=0)
-        print(input.shape)
+        # print(input.shape)
         # Run the train step
+        time_train_start = time.time()
         loss = train(
             input,
             target,
@@ -204,8 +207,17 @@ for epoch in range(1, args.n_epochs + 1):
             decoder_optimizer,
             criterion,
         )
+        time_train_end = time.time()
 
-    print(input.shape)
+        print(
+            "Time taken for training step: %.4f seconds"
+            % (time_train_end - time_train_start)
+        )
+        print(
+            "Time taken for ETL and tensor conversion: %.4f seconds"
+            % (time_etl_tensor_end - time_etl_tensor_start)
+        )
+    # print(input.shape)
 
     # Keep track of loss
     print_loss_total += loss
