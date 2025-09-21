@@ -189,7 +189,7 @@ for epoch in range(1, args.n_epochs + 1):
     for _ in range(len(pairs) // batch_size):
         # Print progress every 100 batches to reduce I/O overhead
         if _ % 1 == 0:
-            progress = (_ + 1) / ((len(pairs) // batch_size) * args.n_epoch) * 100
+            progress = (_ + 1) / ((len(pairs) // batch_size) * args.n_epochs) * 100
             expected_time_sec = (
                 (time.time() - start)
                 / (_ + 1)
