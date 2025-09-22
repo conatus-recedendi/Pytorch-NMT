@@ -240,9 +240,9 @@ def train(
                 return float("inf")
 
             step_loss = criterion(logsoftmax(decoder_output), target_di)
-            print(logsoftmax(decoder_output), decoder_output, target_di)
+            # print(logsoftmax(decoder_output), decoder_output, target_di)
             # until wait for user input
-            input("Press Enter to continue...")
+            # input("Press Enter to continue...")
 
             if torch.isnan(step_loss):
                 print(f"NaN in step_loss at step {di}")
