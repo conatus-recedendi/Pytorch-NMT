@@ -17,8 +17,10 @@ def normalize_string(s):
     s = unicode_to_ascii(s.lower().strip())
     # <unk> 은 보존
     s = re.sub(r"([.!?])", r" \1", s)
-    # <unk>를 제외한 특수문자들을 공백으로 변환 (하나의 정규식으로)
-    s = re.sub(r"(?!<UNK>)<[^>]*>|[^a-zA-Z.!?\s<>]+|<(?!UNK>)|>(?<!UNK>)", r" ", s)
+    # <unk> 토큰을 임시로 보호하고, 다른 특수문자들은 공백으로 변환
+    s = re.sub(r"<UNK>", "TEMPUNKTOKEN", s)  # <unk>를 임시 토큰으로 변경
+    s = re.sub(r"[^a-zA-Z.!?\s]+", r" ", s)  # 영문자, 구두점, 공백 외 제거
+    s = re.sub(r"TEMPUNKTOKEN", "<UNK>", s)  # 임시 토큰을 <unk>로 복원
     return s
 
 
