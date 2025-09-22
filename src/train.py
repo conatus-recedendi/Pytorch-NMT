@@ -233,50 +233,64 @@ def train(
 
     decoder_hidden = encoder_hidden
 
-    # Scheduled sampling - disable teacher forcing
-    use_teacher_forcing = False  # No teacher forcing
+    # Scheduled sampling - enable teacher forcing for better learning
+    use_teacher_forcing = random.random() < args.teacher_forcing_ratio
 
     # Pre-allocate tensors for better performance
-    # logsoftmax = nn.LogSoftmax(dim=1)  # Decoder에서 이미 log_softmax 적용됨
 
-    # Always use previous prediction as next input (no teacher forcing)
-    loss_sum = 0
-    valid_steps = 0
-    valid_tokens = 0
-    for di in range(target_length):
-        decoder_output, decoder_context, decoder_hidden, decoder_attention = decoder(
-            decoder_input, decoder_context, decoder_hidden, encoder_outputs
-        )
-        target_di = target[:, di].squeeze()
-        non_pad_mask = target_di != 0
-
-        # Check for NaN in intermediate values
-        if torch.isnan(decoder_output).any():
-            print(f"NaN in decoder_output at step {di}")
-            return float("inf")
-
-        # Decoder output is already log_softmax applied
-        step_loss = criterion(decoder_output[non_pad_mask], target_di[non_pad_mask])
-
-        if torch.isnan(step_loss):
-            print(f"NaN in step_loss at step {di}")
-            print(
-                f"decoder_output range: [{decoder_output.min():.4f}, {decoder_output.max():.4f}]"
+    if use_teacher_forcing:
+        # Teacher forcing: Feed target as the next input
+        all_decoder_outputs = []
+        for di in range(target_length):
+            decoder_output, decoder_context, decoder_hidden, decoder_attention = (
+                decoder(decoder_input, decoder_context, decoder_hidden, encoder_outputs)
             )
-            print(f"target_di: {target_di}")
-            return float("inf")
+            all_decoder_outputs.append(decoder_output)
+            decoder_input = target[:, di].unsqueeze(1)  # [batch_size, 1]
 
-        loss_sum += step_loss
-        valid_tokens += non_pad_mask.sum().item()
+        # Compute loss for all timesteps at once
+        decoder_outputs_tensor = torch.stack(
+            all_decoder_outputs, dim=1
+        )  # [batch_size, seq_len, vocab_size]
+        decoder_outputs_flat = decoder_outputs_tensor.view(
+            -1, decoder_outputs_tensor.size(-1)
+        )
+        target_flat = target.view(-1)
 
-        topv, topi = decoder_output.data.topk(1, dim=1)
-        decoder_input = topi  # [batch_size, 1]
+        # NLLLoss with ignore_index will handle padding automatically
+        loss = criterion(decoder_outputs_flat, target_flat)
+    else:
+        # No teacher forcing: use previous prediction as next input
+        loss_sum = 0
+        valid_tokens = 0
+        for di in range(target_length):
+            decoder_output, decoder_context, decoder_hidden, decoder_attention = (
+                decoder(decoder_input, decoder_context, decoder_hidden, encoder_outputs)
+            )
+            target_di = target[:, di].squeeze()
+            non_pad_mask = target_di != 0
 
-        # Early stopping if all sequences predict EOS (optional)
-        # if (topi.squeeze() == Language.eos_token).all():
-        #     break
+            # Check for NaN in intermediate values
+            if torch.isnan(decoder_output).any():
+                print(f"NaN in decoder_output at step {di}")
+                return float("inf")
 
-    loss = loss_sum / valid_tokens if valid_tokens > 0 else loss_sum
+            # Decoder output is already log_softmax applied
+            if non_pad_mask.any():
+                step_loss = criterion(
+                    decoder_output[non_pad_mask], target_di[non_pad_mask]
+                )
+                loss_sum += step_loss
+                valid_tokens += non_pad_mask.sum().item()
+
+            if torch.isnan(loss_sum):
+                print(f"NaN in loss_sum at step {di}")
+                return float("inf")
+
+            topv, topi = decoder_output.data.topk(1, dim=1)
+            decoder_input = topi  # [batch_size, 1]
+
+        loss = loss_sum / valid_tokens if valid_tokens > 0 else loss_sum
 
     # Backpropagation
     if scaler is not None:

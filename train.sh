@@ -13,7 +13,7 @@ python src/train.py \
     --hidden_size 1000 \
     --n_layers 4 \
     --dropout 0.0 \
-    --teacher_forcing_ratio 0.0 \
+    --teacher_forcing_ratio 1.0 \
     --clip 5.0 \
     --lr 0.1 \
     --n_epochs 10 \
