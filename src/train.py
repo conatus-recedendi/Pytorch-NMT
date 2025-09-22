@@ -152,14 +152,12 @@ def calculate_perplexity(
                 non_pad_mask = target_di != 0
 
                 if non_pad_mask.any():  # 패딩이 아닌 토큰이 있는 경우
-                    # decoder_output: [batch_size, vocab_size]
+                    # decoder_output: [batch_size, vocab_size] (이미 log_softmax 적용됨)
                     # target_di: [batch_size]
 
-                    logsoftmax = nn.LogSoftmax(dim=1)
-
-                    # 전체 배치에 대해 loss 계산 (NLLLoss가 ignore_index=0으로 패딩 처리)
+                    # Decoder에서 이미 F.log_softmax가 적용되어 있으므로 바로 사용
                     step_loss = criterion(
-                        logsoftmax(decoder_output),
+                        decoder_output,  # 이미 log_softmax 적용된 상태
                         target_di,
                     )
 
@@ -224,7 +222,7 @@ def train(
     use_teacher_forcing = False  # No teacher forcing
 
     # Pre-allocate tensors for better performance
-    logsoftmax = nn.LogSoftmax(dim=1)
+    # logsoftmax = nn.LogSoftmax(dim=1)  # Decoder에서 이미 log_softmax 적용됨
 
     # Always use previous prediction as next input (no teacher forcing)
     loss_sum = 0
@@ -240,7 +238,8 @@ def train(
             print(f"NaN in decoder_output at step {di}")
             return float("inf")
 
-        step_loss = criterion(logsoftmax(decoder_output), target_di)
+        # Decoder output is already log_softmax applied
+        step_loss = criterion(decoder_output, target_di)
 
         if torch.isnan(step_loss):
             print(f"NaN in step_loss at step {di}")
