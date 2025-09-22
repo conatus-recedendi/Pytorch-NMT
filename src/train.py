@@ -144,7 +144,7 @@ def calculate_perplexity(
             decoder_hidden = encoder_hidden
 
             batch_loss = 0
-            valid_tokens = 0
+            valid_idx = 0
 
             # No teacher forcing for evaluation - use model's own predictions
             for di in range(target_length):
@@ -365,9 +365,7 @@ decoder = decoder.to(device)
 # Initialize optimizers and criterion
 encoder_optimizer = optim.Adam(encoder.parameters(), lr=args.lr)
 decoder_optimizer = optim.Adam(decoder.parameters(), lr=args.lr)
-criterion = nn.NLLLoss(
-    ignore_index=2, reduction="mean"
-)  # Ignore padding tokens (PAD=2)
+criterion = nn.NLLLoss(ignore_index=2, reduction="sum")  # Ignore padding tokens (PAD=2)
 
 # Initialize mixed precision scaler - Disable for debugging
 scaler = None  # GradScaler() if device.type == "cuda" else None
