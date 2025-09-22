@@ -7,7 +7,7 @@ class Language:
     def __init__(self, name):
         self.name = name
         self.word2index = {"<SOS>": 0, "<EOS>": 1, "<PAD>": 2, "<UNK>": 3}
-        self.word2count = {}
+        self.word2count = {word: 0 for word in self.word2index}
         self.index2word = {0: "<SOS>", 1: "<EOS>", 2: "<PAD>", 3: "<UNK>"}
         self.n_words = len(self.index2word)
 
