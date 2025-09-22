@@ -13,6 +13,7 @@ from encoder import EncoderRNN
 from language import Language
 from torch.nn.utils.rnn import pad_sequence
 from torch.cuda.amp import autocast, GradScaler
+import torch.nn.functional as F
 
 # Parse argument for language to train
 parser = argparse.ArgumentParser()
@@ -164,6 +165,8 @@ def calculate_perplexity(
                     # target_di: [batch_size]
 
                     # Decoder에서 이미 F.log_softmax가 적용되어 있으므로 바로 사용
+                    decoder_output = F.log_softmax(decoder_output, dim=1)
+
                     step_loss = criterion(
                         decoder_output[non_pad_mask],  # 이미 log_softmax 적용된 상태
                         target_di[non_pad_mask],
@@ -272,6 +275,7 @@ def train(
         target_flat = target.view(-1)
 
         # valid_tokens = (target_flat != 0).sum().item()
+        decoder_output = F.log_softmax(decoder_outputs_flat, dim=1)
 
         # NLLLoss with ignore_index will handle padding automatically
         loss = criterion(decoder_outputs_flat, target_flat)
@@ -293,6 +297,8 @@ def train(
 
             # Decoder output is already log_softmax applied
             if non_pad_mask.any():
+                decoder_output = F.log_softmax(decoder_output, dim=1)
+
                 step_loss = criterion(
                     decoder_output[non_pad_mask], target_di[non_pad_mask]
                 )
