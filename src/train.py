@@ -115,8 +115,12 @@ def calculate_perplexity(
             batch_targets = test_targets[i : i + batch_size]
 
             # 패딩 적용
-            input_batch = pad_sequence(batch_inputs, batch_first=True)
-            target_batch = pad_sequence(batch_targets, batch_first=True)
+            input_batch = pad_sequence(
+                batch_inputs, batch_first=True, padding_value=2
+            )  # PAD token
+            target_batch = pad_sequence(
+                batch_targets, batch_first=True, padding_value=2
+            )  # PAD token
 
             actual_batch_size = input_batch.size(0)
             target_length = target_batch.size(1)
@@ -128,7 +132,11 @@ def calculate_perplexity(
 
             # Decoder
             # <SOS> 토큰으로 초기화
-            decoder_input = torch.LongTensor(actual_batch_size, 1).fill_(0).to(device)
+            decoder_input = (
+                torch.LongTensor(actual_batch_size, 1)
+                .fill_(Language.sos_token)
+                .to(device)
+            )
             decoder_context = torch.zeros(1, actual_batch_size, decoder.hidden_size).to(
                 device
             )
@@ -146,10 +154,10 @@ def calculate_perplexity(
                 )
 
                 target_di = target_batch[:, di].squeeze()
-                # 패딩 토큰(0) 제외 - 일반적인 배치 크기 처리
+                # 패딩 토큰(2) 제외 - 일반적인 배치 크기 처리
 
                 # target_di shape: [batch_size] when squeezed
-                non_pad_mask = target_di != 0
+                non_pad_mask = target_di != 2
 
                 if non_pad_mask.any():  # 패딩이 아닌 토큰이 있는 경우
                     # decoder_output: [batch_size, vocab_size] (이미 log_softmax 적용됨)
@@ -227,7 +235,7 @@ def train(
 
     # Prepare input and output variables
     # decoder_input = torch.LongTensor([0]).to(device)
-    decoder_input = torch.LongTensor(batch_size, 1).fill_(0).to(device)
+    decoder_input = torch.LongTensor(batch_size, 1).fill_(Language.sos_token).to(device)
     #
     decoder_context = torch.zeros(1, batch_size, decoder.hidden_size).to(device)
 
@@ -270,7 +278,7 @@ def train(
                 decoder(decoder_input, decoder_context, decoder_hidden, encoder_outputs)
             )
             target_di = target[:, di].squeeze()
-            non_pad_mask = target_di != 0
+            non_pad_mask = target_di != 2  # PAD token = 2
 
             # Check for NaN in intermediate values
             if torch.isnan(decoder_output).any():
@@ -349,7 +357,7 @@ decoder = decoder.to(device)
 # Initialize optimizers and criterion
 encoder_optimizer = optim.Adam(encoder.parameters(), lr=args.lr)
 decoder_optimizer = optim.Adam(decoder.parameters(), lr=args.lr)
-criterion = nn.NLLLoss()  # Ignore padding tokens
+criterion = nn.NLLLoss(ignore_index=2)  # Ignore padding tokens (PAD=2)
 
 # Initialize mixed precision scaler - Disable for debugging
 scaler = None  # GradScaler() if device.type == "cuda" else None
@@ -429,8 +437,8 @@ for epoch in range(1, args.n_epochs + 1):
         )
         input = training_pair_batch[0]
         target = training_pair_batch[1]
-        input = pad_sequence(input, batch_first=True)
-        target = pad_sequence(target, batch_first=True)
+        input = pad_sequence(input, batch_first=True, padding_value=2)  # PAD token
+        target = pad_sequence(target, batch_first=True, padding_value=2)  # PAD token
 
         # Run the train step
         if scaler is not None:

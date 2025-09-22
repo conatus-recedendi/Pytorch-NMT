@@ -83,17 +83,4 @@ class Attention(nn.Module):
         # Apply temperature scaling for numerical stability
         energies = energies / math.sqrt(self.hidden_size)
 
-        return F.softmax(energies, dim=1).unsqueeze(
-            1
-        )  # [batch_size, 1, seq_len]    def _score(self, hidden, encoder_output):
-        """Calculate the relevance of a particular encoder output in respect to the decoder hidden."""
-
-        if self.method == "dot":
-            energy = hidden.view(-1).dot(encoder_output.view(-1))
-        elif self.method == "general":
-            energy = self.attention(encoder_output)
-            energy = hidden.view(-1).dot(energy.view(-1))
-        elif self.method == "concat":
-            energy = self.attention(torch.cat((hidden, encoder_output), 1))
-            energy = self.other.view(-1).dot(energy.view(-1))
-        return energy
+        return F.softmax(energies, dim=1).unsqueeze(1)  # [batch_size, 1, seq_len]
