@@ -18,7 +18,7 @@ def normalize_string(s):
     # <unk> 은 보존
     s = re.sub(r"([.!?])", r" \1", s)
     # <unk>를 제외한 특수문자들을 공백으로 변환 (하나의 정규식으로)
-    s = re.sub(r"(?!<unk>)<[^>]*>|[^a-zA-Z.!?\s<>]+|<(?!unk>)|>(?<!unk>)", r" ", s)
+    s = re.sub(r"(?!<UNK>)<[^>]*>|[^a-zA-Z.!?\s<>]+|<(?!UNK>)|>(?<!UNK>)", r" ", s)
     return s
 
 

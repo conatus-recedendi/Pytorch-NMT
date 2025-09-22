@@ -6,13 +6,13 @@ class Language:
 
     def __init__(self, name):
         self.name = name
-        self.word2index = {'<SOS>': 0, '<EOS>': 1, '<PAD>': 2, '<UNK>': 3}
+        self.word2index = {"<SOS>": 0, "<EOS>": 1, "<PAD>": 2, "<UNK>": 3}
         self.word2count = {}
-        self.index2word = {0: '<SOS>', 1: '<EOS>', 2: '<PAD>', 3: '<UNK>'}
+        self.index2word = {0: "<SOS>", 1: "<EOS>", 2: "<PAD>", 3: "<UNK>"}
         self.n_words = len(self.index2word)
 
     def index_words(self, sentence):
-        for word in sentence.split(' '):
+        for word in sentence.split(" "):
             self.index_word(word)
 
     def index_word(self, word):

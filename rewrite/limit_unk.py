@@ -21,7 +21,7 @@ def build_vocab(file_path, vocab_size=50000):
 
 
 def replace_with_unk(file_path, vocab, out_path):
-    """파일을 읽어서 vocab에 없는 단어는 <unk>로 치환 후 저장"""
+    """파일을 읽어서 vocab에 없는 단어는 <UNK>로 치환 후 저장"""
     with open(file_path, "rb") as fin, open(out_path, "wb") as fout:
         data = (
             fin.read().decode("utf-8", errors="strict").encode("utf-8", errors="strict")
@@ -30,7 +30,7 @@ def replace_with_unk(file_path, vocab, out_path):
 
             tokens = line.strip().split(b" ")
             # print(tokens)
-            new_tokens = [tok if tok in vocab else b"<unk>" for tok in tokens]
+            new_tokens = [tok if tok in vocab else b"<UNK>" for tok in tokens]
             # print(new_tokens)
 
             fout.write(b" ".join(new_tokens) + b"\n")
