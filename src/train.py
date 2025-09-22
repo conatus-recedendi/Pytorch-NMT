@@ -436,6 +436,7 @@ for epoch in range(1, args.n_epochs + 1):
                     expected_time_str,
                 ),
                 end="\r",
+                file=sys.stderr,
             )
             sys.stdout.flush()
         pair_batch = pairs[_ * batch_size : (_ + 1) * batch_size]
@@ -516,7 +517,7 @@ for epoch in range(1, args.n_epochs + 1):
         time_since = helpers.time_since(start, epoch / args.n_epochs)
         print(
             "%s (%d %d%%) %.4f"
-            % (time_since, epoch, epoch / args.n_epochs * 100, print_loss_avg)
+            % (time_since, epoch, epoch / args.n_epochs * 100, print_loss_avg),
         )
 
     if epoch % args.plot_every == 0:
