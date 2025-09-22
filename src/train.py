@@ -143,12 +143,13 @@ def calculate_perplexity(
                 # 패딩 토큰(0) 제외
                 non_pad_mask = target_di != 0
                 if non_pad_mask.sum() > 0:
+                    logsoftmax = nn.LogSoftmax(dim=1)(decoder_output)
                     print(
-                        nn.LogSoftmax(decoder_output[non_pad_mask]),
+                        logsoftmax[non_pad_mask].shape,
                         target_di[non_pad_mask].shape,
                     )
                     step_loss = criterion(
-                        nn.LogSoftmax(decoder_output[non_pad_mask]),
+                        logsoftmax[non_pad_mask],
                         target_di[non_pad_mask],
                     )
                     print(step_loss)
