@@ -2,6 +2,7 @@ import random
 from itertools import zip_longest
 import unicodedata
 import re
+import argparse
 
 
 # Turns a unicode string to plain ASCII (http://stackoverflow.com/a/518232/2809427)
@@ -102,11 +103,18 @@ def filter_by_length_strict(
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--train_en", type=str, default="train.50k.en")
+    parser.add_argument("--train_de", type=str, default="train.50k.de")
+    parser.add_argument("--out_en", type=str, default="train.len50.en")
+    parser.add_argument("--out_de", type=str, default="train.len50.de")
+    args = parser.parse_args()
+
     filter_by_length_strict(
-        src_file="train.50k.en",
-        tgt_file="train.50k.de",
-        out_src="train.len50.en",
-        out_tgt="train.len50.de",
+        src_file=args.train_en,
+        tgt_file=args.train_de,
+        out_src=args.out_en,
+        out_tgt=args.out_de,
         max_len=50,
         min_len=0,
         shuffle=True,

@@ -3,6 +3,7 @@ import math
 import torch
 import torch.nn as nn
 from torch.nn.utils.rnn import pad_sequence
+import argparse
 
 
 def build_vocab(file_path, vocab_size=50000):
@@ -41,9 +42,20 @@ def replace_with_unk(file_path, vocab, out_path):
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--train_en", type=str, default="./data/wmt/train14/en-de/train.en"
+    )
+    parser.add_argument(
+        "--train_de", type=str, default="./data/wmt/train14/en-de/train.de"
+    )
+    parser.add_argument("--out_en", type=str, default="train.50k.en")
+    parser.add_argument("--out_de", type=str, default="train.50k.de")
+    args = parser.parse_args()
+
     # 입력 파일 경로
-    train_en = "./data/wmt/train14/en-de/train.en"
-    train_de = "./data/wmt/train14/en-de/train.de"
+    train_en = args.train_en
+    train_de = args.train_de
 
     # 어휘 구축 (각각 별도)
     vocab_en = build_vocab(train_en, vocab_size=50000)
@@ -52,8 +64,8 @@ if __name__ == "__main__":
     print(len(vocab_en), len(vocab_de))
 
     # 출력 파일 경로
-    out_en = "train.50k.en"
-    out_de = "train.50k.de"
+    out_en = args.out_en
+    out_de = args.out_de
 
     # <unk> 치환
     replace_with_unk(train_en, vocab_en, out_en)
