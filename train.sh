@@ -15,7 +15,7 @@ python src/train.py \
     --dropout 0.0 \
     --teacher_forcing_ratio 1.0 \
     --clip 5.0 \
-    --lr 0.1 \
+    --lr 1 \
     --n_epochs 10 \
     --plot_every 1 \
     --print_every 1 \
