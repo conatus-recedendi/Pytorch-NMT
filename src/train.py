@@ -95,6 +95,10 @@ def calculate_perplexity(
     encoder, decoder, test_inputs, test_targets, criterion, device
 ):
     """테스트 데이터에 대한 Perplexity 계산"""
+    # 현재 training 상태 저장
+    encoder_was_training = encoder.training
+    decoder_was_training = decoder.training
+
     encoder.eval()
     decoder.eval()
 
@@ -161,8 +165,11 @@ def calculate_perplexity(
             total_loss += batch_loss
             total_tokens += valid_tokens
 
-    encoder.train()
-    decoder.train()
+    # 원래 training 상태로 복원
+    if encoder_was_training:
+        encoder.train()
+    if decoder_was_training:
+        decoder.train()
 
     if total_tokens == 0:
         return float("inf")
@@ -434,7 +441,7 @@ for epoch in range(1, args.n_epochs + 1):
         # avg_loss = epoch_loss / batch_count
         avg_loss = batch_loss
 
-        # Calculate perplexity every 10000 batches
+        # Calculate perplexity every 1000 batches
         if total_batch_count % 10 == 0 and test_inputs is not None:
             print(f"\n\nCalculating perplexity at batch {total_batch_count}...")
             # Simple perplexity calculation using current loss
@@ -442,6 +449,9 @@ for epoch in range(1, args.n_epochs + 1):
             current_ppl = calculate_perplexity(
                 encoder, decoder, test_inputs, test_targets, criterion, device
             )
+            # Ensure models are back in training mode
+            encoder.train()
+            decoder.train()
             # current_ppl = math.exp(min(avg_loss, 10))  # Cap to prevent overflow
             print(
                 f"Approximate Perplexity at batch {total_batch_count}: {current_ppl:.4f}"
