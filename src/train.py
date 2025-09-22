@@ -162,7 +162,8 @@ def calculate_perplexity(
                     )
 
                     # 실제 유효한 토큰 개수만큼 loss와 토큰 수 누적
-                    batch_loss += step_loss.item() * non_pad_mask.sum().item()
+                    # 주의: step_loss.item()은 이미 배치 전체에 대한 평균 loss
+                    batch_loss += step_loss.item()  # 가중치 제거
                     valid_tokens += non_pad_mask.sum().item()
 
                 # Use model's prediction as next input (no teacher forcing)
@@ -187,7 +188,20 @@ def calculate_perplexity(
 
     avg_loss = total_loss / total_tokens
     print(f"Avg Loss: {avg_loss:.4f}, Total Tokens: {total_tokens}")
-    perplexity = math.exp(min(avg_loss, 10))  # Cap to prevent overflow
+    print(f"Total Loss: {total_loss:.4f}")
+
+    # Debug perplexity calculation
+    if avg_loss > 10:
+        print(
+            f"WARNING: Average loss is very high ({avg_loss:.4f}), capping at 10 for perplexity"
+        )
+        perplexity = math.exp(10)  # Cap to prevent overflow
+    else:
+        perplexity = math.exp(avg_loss)
+
+    print(
+        f"Raw perplexity calculation: exp({min(avg_loss, 10):.4f}) = {perplexity:.4f}"
+    )
     return perplexity
 
 
@@ -429,8 +443,8 @@ for epoch in range(1, args.n_epochs + 1):
         # avg_loss = epoch_loss / batch_count
         avg_loss = batch_loss
 
-        # Calculate perplexity every 1000 batches
-        if total_batch_count % 1 == 0 and test_inputs is not None:
+        # Calculate perplexity every 100 batches
+        if total_batch_count % 100 == 0 and test_inputs is not None:
             print(f"\n\nCalculating perplexity at batch {total_batch_count}...")
             # Simple perplexity calculation using current loss
             # Perplexity = exp(average_loss)
