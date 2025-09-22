@@ -148,14 +148,18 @@ def calculate_perplexity(
                 target_di = target_batch[:, di].squeeze()
                 # 패딩 토큰(0) 제외
                 non_pad_mask = target_di != 0
-                # target_di 의 크기가 torch.Size([1]) 이면, torch.Size([1, 1])로 확장
-                if target_di.dim() == 1:
-                    target_di = target_di.unsqueeze(1)
                 if non_pad_mask.sum() > 0:
-                    logsoftmax = nn.LogSoftmax(dim=0)
+                    # decoder_output shape: [batch_size, vocab_size]
+                    # non_pad_mask로 필터링된 output: [num_non_pad, vocab_size]
+                    filtered_output = decoder_output[
+                        non_pad_mask
+                    ]  # [num_non_pad, vocab_size]
+                    filtered_target = target_di[non_pad_mask]  # [num_non_pad]
+
+                    logsoftmax = nn.LogSoftmax(dim=1)  # vocab_size 차원에 대해 softmax
                     step_loss = criterion(
-                        logsoftmax(decoder_output[non_pad_mask]),
-                        target_di[non_pad_mask],
+                        logsoftmax(filtered_output),
+                        filtered_target,
                     )
                     batch_loss += step_loss.item() * non_pad_mask.sum().item()
                     valid_tokens += non_pad_mask.sum().item()
