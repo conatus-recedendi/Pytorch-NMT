@@ -187,7 +187,7 @@ def calculate_perplexity(
         return float("inf")
 
     avg_loss = total_loss / total_tokens
-    avg_loss /= len(test_inputs)
+    # avg_loss /= len(test_inputs)
     print(f"Avg Loss: {avg_loss:.4f}, Total Tokens: {total_tokens}")
     print(f"Total Loss: {total_loss:.4f}")
 
