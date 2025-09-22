@@ -274,6 +274,7 @@ def train(
         #     break
 
     loss = loss_sum / valid_steps if valid_steps > 0 else loss_sum
+    loss /= batch_size  # Normalize by batch size
 
     # Backpropagation
     if scaler is not None:
