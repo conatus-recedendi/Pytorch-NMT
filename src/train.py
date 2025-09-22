@@ -360,8 +360,10 @@ encoder = encoder.to(device)
 decoder = decoder.to(device)
 
 # Initialize optimizers and criterion
-encoder_optimizer = optim.Adam(encoder.parameters(), lr=args.lr)
-decoder_optimizer = optim.Adam(decoder.parameters(), lr=args.lr)
+# encoder_optimizer = optim.Adam(encoder.parameters(), lr=args.lr)
+encoder_optimizer = optim.SGD(encoder.parameters(), lr=args.lr)
+# decoder_optimizer = optim.Adam(decoder.parameters(), lr=args.lr)
+decoder_optimizer = optim.SGD(decoder.parameters(), lr=args.lr)
 criterion = nn.NLLLoss(ignore_index=2, reduction="sum")  # Ignore padding tokens (PAD=2)
 
 # Initialize mixed precision scaler - Disable for debugging
