@@ -168,6 +168,7 @@ def calculate_perplexity(
                         decoder_output[non_pad_mask],  # 이미 log_softmax 적용된 상태
                         target_di[non_pad_mask],
                     )
+                    print(step_loss)
 
                     # print(
                     #     decoder_output[non_pad_mask].shape,
@@ -364,7 +365,9 @@ decoder = decoder.to(device)
 # Initialize optimizers and criterion
 encoder_optimizer = optim.Adam(encoder.parameters(), lr=args.lr)
 decoder_optimizer = optim.Adam(decoder.parameters(), lr=args.lr)
-criterion = nn.NLLLoss(ignore_index=2)  # Ignore padding tokens (PAD=2)
+criterion = nn.NLLLoss(
+    ignore_index=2, reduction="mean"
+)  # Ignore padding tokens (PAD=2)
 
 # Initialize mixed precision scaler - Disable for debugging
 scaler = None  # GradScaler() if device.type == "cuda" else None
