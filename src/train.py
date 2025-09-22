@@ -428,7 +428,10 @@ for epoch in range(1, args.n_epochs + 1):
             print(f"\n\nCalculating perplexity at batch {total_batch_count}...")
             # Simple perplexity calculation using current loss
             # Perplexity = exp(average_loss)
-            current_ppl = math.exp(min(avg_loss, 10))  # Cap to prevent overflow
+            current_ppl = calculate_perplexity(
+                encoder, decoder, test_inputs, test_targets, criterion, device
+            )
+            # current_ppl = math.exp(min(avg_loss, 10))  # Cap to prevent overflow
             print(
                 f"Approximate Perplexity at batch {total_batch_count}: {current_ppl:.4f}"
             )
