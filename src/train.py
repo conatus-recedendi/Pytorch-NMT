@@ -107,8 +107,8 @@ def calculate_perplexity(
 
     with torch.no_grad():
         # 배치 처리를 위해 패딩
-        # batch_size = min(1, len(test_inputs))  # 메모리 고려해서 작은 배치 사용
-        batch_size = 1
+        batch_size = min(1, len(test_inputs))  # 메모리 고려해서 작은 배치 사용
+        # batch_size = 1
 
         for i in range(0, len(test_inputs), batch_size):
             batch_inputs = test_inputs[i : i + batch_size]
@@ -148,6 +148,9 @@ def calculate_perplexity(
                 target_di = target_batch[:, di].squeeze()
                 # 패딩 토큰(0) 제외
                 non_pad_mask = target_di != 0
+                # target_di 의 크기가 torch.Size([1]) 이면, torch.Size([1, 1])로 확장
+                if target_di.dim() == 1:
+                    target_di = target_di.unsqueeze(1)
                 if non_pad_mask.sum() > 0:
                     logsoftmax = nn.LogSoftmax(dim=0)
                     print(
