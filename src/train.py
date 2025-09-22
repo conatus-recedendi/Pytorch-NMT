@@ -144,11 +144,11 @@ def calculate_perplexity(
                 non_pad_mask = target_di != 0
                 if non_pad_mask.sum() > 0:
                     print(
-                        decoder_output[non_pad_mask].shape,
+                        nn.LogSoftmax(decoder_output[non_pad_mask]),
                         target_di[non_pad_mask].shape,
                     )
                     step_loss = criterion(
-                        nn.LogSoftmax(decoder_output[non_pad_mask], dim=1),
+                        nn.LogSoftmax(decoder_output[non_pad_mask]),
                         target_di[non_pad_mask],
                     )
                     print(step_loss)
