@@ -15,8 +15,10 @@ def unicode_to_ascii(s):
 
 def normalize_string(s):
     s = unicode_to_ascii(s.lower().strip())
+    # <unk> 은 보존
     s = re.sub(r"([.!?])", r" \1", s)
-    s = re.sub(r"[^a-zA-Z.!?]+", r" ", s)
+    # <unk>를 제외한 특수문자들을 공백으로 변환 (하나의 정규식으로)
+    s = re.sub(r"(?!<unk>)<[^>]*>|[^a-zA-Z.!?\s<>]+|<(?!unk>)|>(?<!unk>)", r" ", s)
     return s
 
 

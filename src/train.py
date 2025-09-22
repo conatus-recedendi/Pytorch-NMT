@@ -90,13 +90,32 @@ def train(
         decoder_outputs_tensor = torch.stack(
             all_decoder_outputs, dim=1
         )  # [batch_size, seq_len, vocab_size]
+        
+        # Check if outputs are valid log probabilities (should be <= 0)
+        if decoder_outputs_tensor.max() > 0.01:  # Allow small numerical errors
+            print(f"WARNING: Decoder outputs may not be log probabilities! Max value: {decoder_outputs_tensor.max()}")
+        
         decoder_outputs_flat = decoder_outputs_tensor.view(
             -1, decoder_outputs_tensor.size(-1)
         )
         target_flat = target.view(-1)
 
+        # Debug: Check tensor shapes and values
+        print(f"decoder_outputs_flat shape: {decoder_outputs_flat.shape}")
+        print(f"target_flat shape: {target_flat.shape}")
+        print(f"decoder_outputs_flat range: [{decoder_outputs_flat.min():.4f}, {decoder_outputs_flat.max():.4f}]")
+        print(f"target_flat unique values: {torch.unique(target_flat)}")
+        
+        # Check if decoder outputs are proper log probabilities
+        if torch.isnan(decoder_outputs_flat).any():
+            print("NaN detected in decoder_outputs_flat!")
+        if torch.isinf(decoder_outputs_flat).any():
+            print("Inf detected in decoder_outputs_flat!")
+
         # NLLLoss with ignore_index will handle padding automatically
         loss = criterion(decoder_outputs_flat, target_flat)
+        
+        print(f"Computed loss: {loss.item()}")
     else:
         # Use previous prediction as next input
         loss_sum = 0
@@ -151,7 +170,6 @@ def train(
         decoder_grad_norm = nn.utils.clip_grad_norm_(decoder.parameters(), args.clip)
         encoder_opt.step()
         decoder_opt.step()
-
     # Check for NaN
     if torch.isnan(loss):
         print(f"NaN detected! Target length: {target_length}, Loss: {loss.item()}")
