@@ -107,6 +107,7 @@ def calculate_perplexity(
 
     with torch.no_grad():
         # 배치 처리를 위해 패딩
+        # batch_size = min(1, len(test_inputs))  # 메모리 고려해서 작은 배치 사용
         batch_size = 1
 
         for i in range(0, len(test_inputs), batch_size):
@@ -122,7 +123,7 @@ def calculate_perplexity(
 
             # Forward pass
             encoder_hidden = encoder.init_hidden(device, actual_batch_size)
-            input_batch = input_batch.squeeze(-1)
+            # input_batch = input_batch.squeeze(-1)
             encoder_outputs, encoder_hidden = encoder(input_batch, encoder_hidden)
 
             # Decoder
