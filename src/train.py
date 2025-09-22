@@ -169,10 +169,12 @@ def calculate_perplexity(
                         target_di[non_pad_mask],
                     )
 
-                    print(
-                        decoder_output[non_pad_mask].shape,
-                        target_di[non_pad_mask].shape,
-                    )
+                    print(decoder_output[non_pad_mask], target_di[non_pad_mask])
+
+                    # print(
+                    #     decoder_output[non_pad_mask].shape,
+                    #     target_di[non_pad_mask].shape,
+                    # )
                     # 실제 유효한 토큰 개수만큼 loss와 토큰 수 누적
                     # 주의: step_loss.item()은 이미 배치 전체에 대한 평균 loss
                     batch_loss += step_loss.item()  # 가중치 제거
