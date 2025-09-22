@@ -101,73 +101,75 @@ def calculate_perplexity(
     total_loss = 0
     total_tokens = 0
 
-    # with torch.no_grad():
-    # 배치 처리를 위해 패딩
-    batch_size = min(32, len(test_inputs))  # 메모리 고려해서 작은 배치 사용
+    with torch.no_grad():
+        # 배치 처리를 위해 패딩
+        batch_size = min(32, len(test_inputs))  # 메모리 고려해서 작은 배치 사용
 
-    for i in range(0, len(test_inputs), batch_size):
-        batch_inputs = test_inputs[i : i + batch_size]
-        batch_targets = test_targets[i : i + batch_size]
+        for i in range(0, len(test_inputs), batch_size):
+            batch_inputs = test_inputs[i : i + batch_size]
+            batch_targets = test_targets[i : i + batch_size]
 
-        # 패딩 적용
-        input_batch = pad_sequence(batch_inputs, batch_first=True)
-        target_batch = pad_sequence(batch_targets, batch_first=True)
+            # 패딩 적용
+            input_batch = pad_sequence(batch_inputs, batch_first=True)
+            target_batch = pad_sequence(batch_targets, batch_first=True)
 
-        actual_batch_size = input_batch.size(0)
-        target_length = target_batch.size(1)
+            actual_batch_size = input_batch.size(0)
+            target_length = target_batch.size(1)
 
-        # Forward pass
-        encoder_hidden = encoder.init_hidden(device, actual_batch_size)
-        input_batch = input_batch.squeeze(-1)
-        encoder_outputs, encoder_hidden = encoder(input_batch, encoder_hidden)
+            # Forward pass
+            encoder_hidden = encoder.init_hidden(device, actual_batch_size)
+            input_batch = input_batch.squeeze(-1)
+            encoder_outputs, encoder_hidden = encoder(input_batch, encoder_hidden)
 
-        # Decoder
-        decoder_input = torch.LongTensor(actual_batch_size, 1).fill_(0).to(device)
-        decoder_context = torch.zeros(1, actual_batch_size, decoder.hidden_size).to(
-            device
-        )
-        decoder_hidden = encoder_hidden
-
-        batch_loss = 0
-        valid_tokens = 0
-
-        # Teacher forcing for evaluation
-        for di in range(target_length):
-            decoder_output, decoder_context, decoder_hidden, decoder_attention = (
-                decoder(decoder_input, decoder_context, decoder_hidden, encoder_outputs)
+            # Decoder
+            decoder_input = torch.LongTensor(actual_batch_size, 1).fill_(0).to(device)
+            decoder_context = torch.zeros(1, actual_batch_size, decoder.hidden_size).to(
+                device
             )
+            decoder_hidden = encoder_hidden
 
-            target_di = target_batch[:, di].squeeze()
-            # 패딩 토큰(0) 제외
-            non_pad_mask = target_di != 0
-            if non_pad_mask.sum() > 0:
-                logsoftmax = nn.LogSoftmax(dim=0)
-                # print(
-                #     logsoftmax[non_pad_mask].shape,
-                #     target_di[non_pad_mask].shape,
-                # )
-                step_loss = criterion(
-                    logsoftmax(decoder_output[non_pad_mask]), target_di[non_pad_mask]
+            batch_loss = 0
+            valid_tokens = 0
+
+            # Teacher forcing for evaluation
+            for di in range(target_length):
+                decoder_output, decoder_context, decoder_hidden, decoder_attention = (
+                    decoder(
+                        decoder_input, decoder_context, decoder_hidden, encoder_outputs
+                    )
                 )
-                # print(step_lossz)
-                batch_loss += step_loss.item() * non_pad_mask.sum().item()
-                valid_tokens += non_pad_mask.sum().item()
 
-            decoder_input = target_batch[:, di].unsqueeze(1)
+                target_di = target_batch[:, di].squeeze()
+                # 패딩 토큰(0) 제외
+                non_pad_mask = target_di != 0
+                if non_pad_mask.sum() > 0:
+                    logsoftmax = nn.LogSoftmax(dim=0)
+                    # print(
+                    #     logsoftmax[non_pad_mask].shape,
+                    #     target_di[non_pad_mask].shape,
+                    # )
+                    step_loss = criterion(
+                        logsoftmax(decoder_output[non_pad_mask]),
+                        target_di[non_pad_mask],
+                    )
+                    # print(step_lossz)
+                    batch_loss += step_loss.item() * non_pad_mask.sum().item()
+                    valid_tokens += non_pad_mask.sum().item()
 
-        total_loss += batch_loss
-        total_tokens += valid_tokens
+                decoder_input = target_batch[:, di].unsqueeze(1)
 
-    # encoder.train()
-    # decoder.train()
+            total_loss += batch_loss
+            total_tokens += valid_tokens
+
+    encoder.train()
+    decoder.train()
 
     if total_tokens == 0:
         return float("inf")
 
     avg_loss = total_loss / total_tokens
     print(f"Avg Loss: {avg_loss:.4f}, Total Tokens: {total_tokens}")
-    # perplexity = math.exp(avg_loss)
-    perplexity = avg_loss
+    perplexity = math.exp(min(avg_loss, 10))  # Cap to prevent overflow
     return perplexity
 
 
