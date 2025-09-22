@@ -38,6 +38,18 @@ class AttentionDecoderRNN(nn.Module):
         if attn_model is not None:
             self.attention = Attention(attn_model, hidden_size)
 
+        # Initialize parameters with U[-0.1, 0.1]
+        self._initialize_weights()
+
+    def _initialize_weights(self):
+        """Initialize all parameters with uniform distribution U[-0.1, 0.1]"""
+        for name, param in self.named_parameters():
+            if param.dim() > 1:  # Weight matrices
+                nn.init.uniform_(param, -0.1, 0.1)
+            else:  # Bias vectors
+                nn.init.uniform_(param, -0.1, 0.1)
+        print(f"AttentionDecoder: Initialized all parameters with U[-0.1, 0.1]")
+
     def forward(self, input, decoder_context, hidden_state, encoder_outputs):
         """Run forward propagation one step at a time.
 

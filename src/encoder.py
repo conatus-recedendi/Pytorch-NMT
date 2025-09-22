@@ -28,6 +28,18 @@ class EncoderRNN(nn.Module):
         # Learnable initial hidden state
         self.init_hidden_param = nn.Parameter(torch.randn(n_layers, 1, hidden_size))
 
+        # Initialize parameters with U[-0.1, 0.1]
+        self._initialize_weights()
+
+    def _initialize_weights(self):
+        """Initialize all parameters with uniform distribution U[-0.1, 0.1]"""
+        for name, param in self.named_parameters():
+            if param.dim() > 1:  # Weight matrices
+                nn.init.uniform_(param, -0.1, 0.1)
+            else:  # Bias vectors
+                nn.init.uniform_(param, -0.1, 0.1)
+        print(f"Encoder: Initialized all parameters with U[-0.1, 0.1]")
+
     def forward(self, inputs, hidden_state):
         """
         inputs: [batch, len]

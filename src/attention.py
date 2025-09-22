@@ -19,6 +19,18 @@ class Attention(nn.Module):
             self.attention = nn.Linear(self.hidden_size * 2, self.hidden_size)
             self.other = nn.Parameter(torch.FloatTensor(1, self.hidden_size))
 
+        # Initialize parameters with U[-0.1, 0.1]
+        self._initialize_weights()
+
+    def _initialize_weights(self):
+        """Initialize all parameters with uniform distribution U[-0.1, 0.1]"""
+        for name, param in self.named_parameters():
+            if param.dim() > 1:  # Weight matrices
+                nn.init.uniform_(param, -0.1, 0.1)
+            else:  # Bias vectors
+                nn.init.uniform_(param, -0.1, 0.1)
+        print(f"Attention: Initialized all parameters with U[-0.1, 0.1]")
+
     def forward(self, hidden, encoder_outputs):
         """Attend all encoder inputs conditioned on the previous hidden state of the decoder.
 
