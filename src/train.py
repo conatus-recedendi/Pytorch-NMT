@@ -242,6 +242,7 @@ def train(
     # Always use previous prediction as next input (no teacher forcing)
     loss_sum = 0
     valid_steps = 0
+    valid_tokens = 0
     for di in range(target_length):
         decoder_output, decoder_context, decoder_hidden, decoder_attention = decoder(
             decoder_input, decoder_context, decoder_hidden, encoder_outputs
