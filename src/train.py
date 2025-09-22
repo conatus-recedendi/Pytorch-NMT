@@ -257,8 +257,10 @@ def train(
         )
         target_flat = target.view(-1)
 
+        valid_tokens = (target_flat != 0).sum().item()
+
         # NLLLoss with ignore_index will handle padding automatically
-        loss = criterion(decoder_outputs_flat, target_flat)
+        loss = criterion(decoder_outputs_flat, target_flat) / valid_tokens
     else:
         # No teacher forcing: use previous prediction as next input
         loss_sum = 0
