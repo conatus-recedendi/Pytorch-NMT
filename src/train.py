@@ -376,7 +376,7 @@ for epoch in range(1, args.n_epochs + 1):
                     13,
                     epoch,
                     args.n_epochs,
-                    total_batch_count
+                    total_batch_count,
                     avg_loss if batch_count > 0 else 0,
                     progress,
                     expected_time_str,
