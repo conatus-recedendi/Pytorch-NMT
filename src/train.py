@@ -203,7 +203,7 @@ def train(
 
     # Pre-allocate tensors for better performance
     all_decoder_outputs = []
-    logsoftmax = nn.LogSoftmax(dim=1)
+    logsoftmax = nn.LogSoftmax(dim=0)
     if use_teacher_forcing:
         # Feed target as the next input
         for di in range(target_length):
