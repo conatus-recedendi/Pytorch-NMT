@@ -164,15 +164,10 @@ def calculate_perplexity(
                     # decoder_output: [batch_size, vocab_size] (이미 log_softmax 적용됨)
                     # target_di: [batch_size]
 
-                    # Decoder에서 이미 F.log_softmax가 적용되어 있으므로 바로 사용
-                    decoder_output = F.log_softmax(decoder_output, dim=1)
-
                     step_loss = criterion(
                         decoder_output[non_pad_mask],  # 이미 log_softmax 적용된 상태
                         target_di[non_pad_mask],
                     )
-
-                    print(decoder_output[non_pad_mask], target_di[non_pad_mask])
 
                     # print(
                     #     decoder_output[non_pad_mask].shape,
