@@ -103,7 +103,7 @@ def calculate_perplexity(
 
     with torch.no_grad():
         # 배치 처리를 위해 패딩
-        batch_size = min(32, len(test_inputs))  # 메모리 고려해서 작은 배치 사용
+        batch_size = min(1, len(test_inputs))  # 메모리 고려해서 작은 배치 사용
 
         for i in range(0, len(test_inputs), batch_size):
             batch_inputs = test_inputs[i : i + batch_size]
@@ -161,6 +161,7 @@ def calculate_perplexity(
         return float("inf")
 
     avg_loss = total_loss / total_tokens
+    print(f"Avg Loss: {avg_loss:.4f}, Total Tokens: {total_tokens}")
     perplexity = math.exp(avg_loss)
     return perplexity
 
