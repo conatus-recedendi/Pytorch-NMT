@@ -144,7 +144,7 @@ def calculate_perplexity(
             decoder_hidden = encoder_hidden
 
             batch_loss = 0
-            valid_idx = 0
+            valid_tokens = 0
 
             # No teacher forcing for evaluation - use model's own predictions
             for di in range(target_length):
