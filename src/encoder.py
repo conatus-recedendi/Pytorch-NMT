@@ -25,6 +25,9 @@ class EncoderRNN(nn.Module):
         self.dropout = nn.Dropout(dropout)
         self.rnn = nn.GRU(embedding_size, hidden_size, n_layers)
 
+        # Learnable initial hidden state
+        self.init_hidden_param = nn.Parameter(torch.randn(n_layers, 1, hidden_size))
+
     def forward(self, inputs, hidden_state):
         """
         inputs: [batch, len]
@@ -40,7 +43,8 @@ class EncoderRNN(nn.Module):
         batch_size = (
             actual_batch_size if actual_batch_size is not None else self.batch_size
         )
-        hidden_state = torch.zeros(self.n_layers, batch_size, self.hidden_size).to(
-            device
-        )
+        # Use learnable initial hidden state, expanded for batch size
+        hidden_state = self.init_hidden_param.expand(
+            self.n_layers, batch_size, self.hidden_size
+        ).contiguous()
         return hidden_state

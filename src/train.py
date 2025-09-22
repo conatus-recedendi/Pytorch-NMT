@@ -126,6 +126,7 @@ def calculate_perplexity(
             encoder_outputs, encoder_hidden = encoder(input_batch, encoder_hidden)
 
             # Decoder
+            # <SOS> 토큰으로 초기화
             decoder_input = torch.LongTensor(actual_batch_size, 1).fill_(0).to(device)
             decoder_context = torch.zeros(1, actual_batch_size, decoder.hidden_size).to(
                 device
