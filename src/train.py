@@ -123,7 +123,7 @@ def calculate_perplexity(
 
             # Forward pass
             encoder_hidden = encoder.init_hidden(device, actual_batch_size)
-            # input_batch = input_batch.squeeze(-1)
+            input_batch = input_batch.squeeze(-1)
             encoder_outputs, encoder_hidden = encoder(input_batch, encoder_hidden)
 
             # Decoder
@@ -150,6 +150,10 @@ def calculate_perplexity(
                 non_pad_mask = target_di != 0
                 if non_pad_mask.sum() > 0:
                     logsoftmax = nn.LogSoftmax(dim=0)
+                    print(
+                        logsoftmax(decoder_output[non_pad_mask]).shape,
+                        target_di[non_pad_mask].shape,
+                    )
                     step_loss = criterion(
                         logsoftmax(decoder_output[non_pad_mask]),
                         target_di[non_pad_mask],
