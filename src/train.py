@@ -146,21 +146,26 @@ def calculate_perplexity(
                 )
 
                 target_di = target_batch[:, di].squeeze()
-                # 패딩 토큰(0) 제외 - 배치 크기가 1이므로 간단히 처리
-                if target_di.item() != 0:  # padding이 아닌 경우에만 loss 계산
-                    # decoder_output: [1, vocab_size], target_di: scalar
-                    logsoftmax = nn.LogSoftmax(dim=1)
-                    # target_di를 적절한 차원으로 변환
-                    target_tensor = (
-                        target_di.unsqueeze(0) if target_di.dim() == 0 else target_di
-                    )
+                # 패딩 토큰(0) 제외 - 일반적인 배치 크기 처리
 
+                # target_di shape: [batch_size] when squeezed
+                non_pad_mask = target_di != 0
+
+                if non_pad_mask.any():  # 패딩이 아닌 토큰이 있는 경우
+                    # decoder_output: [batch_size, vocab_size]
+                    # target_di: [batch_size]
+
+                    logsoftmax = nn.LogSoftmax(dim=1)
+
+                    # 전체 배치에 대해 loss 계산 (NLLLoss가 ignore_index=0으로 패딩 처리)
                     step_loss = criterion(
                         logsoftmax(decoder_output),
-                        target_tensor,
+                        target_di,
                     )
-                    batch_loss += step_loss.item()
-                    valid_tokens += 1
+
+                    # 실제 유효한 토큰 개수만큼 loss와 토큰 수 누적
+                    batch_loss += step_loss.item() * non_pad_mask.sum().item()
+                    valid_tokens += non_pad_mask.sum().item()
 
                 # Use model's prediction as next input (no teacher forcing)
                 topv, topi = decoder_output.data.topk(1, dim=1)
