@@ -4,6 +4,7 @@ import etl
 import helpers
 import random
 import time
+import math
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -42,6 +43,126 @@ device = torch.device(args.device)
 print("device: ", device)
 
 # helpers.validate_language(args.language)
+
+
+# Perplexity calculation functions
+def load_test_data(
+    en_file, de_file, input_lang, output_lang, device="cpu", max_samples=1000
+):
+    """테스트 데이터를 로드하고 tensor로 변환"""
+    test_pairs = []
+
+    with open(en_file, "r", encoding="utf-8") as f_en, open(
+        de_file, "r", encoding="utf-8"
+    ) as f_de:
+
+        for i, (en_line, de_line) in enumerate(zip(f_en, f_de)):
+            if i >= max_samples:  # 계산 시간을 위해 샘플 수 제한
+                break
+            en_line = en_line.strip()
+            de_line = de_line.strip()
+            if en_line and de_line:
+                test_pairs.append((en_line, de_line))
+
+    # 텐서로 변환
+    test_inputs = []
+    test_targets = []
+
+    for en_sent, de_sent in test_pairs:
+        # 문장을 인덱스로 변환
+        en_indexes = [
+            input_lang.word2index.get(word, input_lang.word2index.get("<unk>", 1))
+            for word in en_sent.split()
+        ]
+        de_indexes = [
+            output_lang.word2index.get(word, output_lang.word2index.get("<unk>", 1))
+            for word in de_sent.split()
+        ]
+
+        en_indexes.append(Language.eos_token)  # EOS token
+        de_indexes.append(Language.eos_token)  # EOS token
+
+        en_tensor = torch.LongTensor(en_indexes).view(-1, 1).to(device)
+        de_tensor = torch.LongTensor(de_indexes).view(-1, 1).to(device)
+
+        test_inputs.append(en_tensor)
+        test_targets.append(de_tensor)
+
+    return test_inputs, test_targets
+
+
+def calculate_perplexity(
+    encoder, decoder, test_inputs, test_targets, criterion, device
+):
+    """테스트 데이터에 대한 Perplexity 계산"""
+    encoder.eval()
+    decoder.eval()
+
+    total_loss = 0
+    total_tokens = 0
+
+    with torch.no_grad():
+        # 배치 처리를 위해 패딩
+        batch_size = min(32, len(test_inputs))  # 메모리 고려해서 작은 배치 사용
+
+        for i in range(0, len(test_inputs), batch_size):
+            batch_inputs = test_inputs[i : i + batch_size]
+            batch_targets = test_targets[i : i + batch_size]
+
+            # 패딩 적용
+            input_batch = pad_sequence(batch_inputs, batch_first=True)
+            target_batch = pad_sequence(batch_targets, batch_first=True)
+
+            actual_batch_size = input_batch.size(0)
+            target_length = target_batch.size(1)
+
+            # Forward pass
+            encoder_hidden = encoder.init_hidden(device, actual_batch_size)
+            input_batch = input_batch.squeeze(-1)
+            encoder_outputs, encoder_hidden = encoder(input_batch, encoder_hidden)
+
+            # Decoder
+            decoder_input = torch.LongTensor(actual_batch_size, 1).fill_(0).to(device)
+            decoder_context = torch.zeros(1, actual_batch_size, decoder.hidden_size).to(
+                device
+            )
+            decoder_hidden = encoder_hidden
+
+            batch_loss = 0
+            valid_tokens = 0
+
+            # Teacher forcing for evaluation
+            for di in range(target_length):
+                decoder_output, decoder_context, decoder_hidden, decoder_attention = (
+                    decoder(
+                        decoder_input, decoder_context, decoder_hidden, encoder_outputs
+                    )
+                )
+
+                target_di = target_batch[:, di].squeeze()
+                # 패딩 토큰(0) 제외
+                non_pad_mask = target_di != 0
+                if non_pad_mask.sum() > 0:
+                    step_loss = criterion(
+                        decoder_output[non_pad_mask], target_di[non_pad_mask]
+                    )
+                    batch_loss += step_loss.item() * non_pad_mask.sum().item()
+                    valid_tokens += non_pad_mask.sum().item()
+
+                decoder_input = target_batch[:, di].unsqueeze(1)
+
+            total_loss += batch_loss
+            total_tokens += valid_tokens
+
+    encoder.train()
+    decoder.train()
+
+    if total_tokens == 0:
+        return float("inf")
+
+    avg_loss = total_loss / total_tokens
+    perplexity = math.exp(avg_loss)
+    return perplexity
 
 
 def train(
@@ -90,32 +211,13 @@ def train(
         decoder_outputs_tensor = torch.stack(
             all_decoder_outputs, dim=1
         )  # [batch_size, seq_len, vocab_size]
-        
-        # Check if outputs are valid log probabilities (should be <= 0)
-        if decoder_outputs_tensor.max() > 0.01:  # Allow small numerical errors
-            print(f"WARNING: Decoder outputs may not be log probabilities! Max value: {decoder_outputs_tensor.max()}")
-        
         decoder_outputs_flat = decoder_outputs_tensor.view(
             -1, decoder_outputs_tensor.size(-1)
         )
         target_flat = target.view(-1)
 
-        # Debug: Check tensor shapes and values
-        print(f"decoder_outputs_flat shape: {decoder_outputs_flat.shape}")
-        print(f"target_flat shape: {target_flat.shape}")
-        print(f"decoder_outputs_flat range: [{decoder_outputs_flat.min():.4f}, {decoder_outputs_flat.max():.4f}]")
-        print(f"target_flat unique values: {torch.unique(target_flat)}")
-        
-        # Check if decoder outputs are proper log probabilities
-        if torch.isnan(decoder_outputs_flat).any():
-            print("NaN detected in decoder_outputs_flat!")
-        if torch.isinf(decoder_outputs_flat).any():
-            print("Inf detected in decoder_outputs_flat!")
-
         # NLLLoss with ignore_index will handle padding automatically
         loss = criterion(decoder_outputs_flat, target_flat)
-        
-        print(f"Computed loss: {loss.item()}")
     else:
         # Use previous prediction as next input
         loss_sum = 0
@@ -213,6 +315,21 @@ criterion = nn.NLLLoss(ignore_index=0)  # Ignore padding tokens
 # Initialize mixed precision scaler - Disable for debugging
 scaler = None  # GradScaler() if device.type == "cuda" else None
 
+# Load test data for perplexity calculation
+test_inputs = None
+test_targets = None
+try:
+    test_inputs, test_targets = load_test_data(
+        "./data/test.14.en",
+        "./data/test.14.de",
+        input_lang,
+        output_lang,
+        device,
+        max_samples=1000,
+    )
+    print(f"Loaded {len(test_inputs)} test samples for perplexity calculation")
+except FileNotFoundError:
+    print("Test files not found. Perplexity calculation will be skipped.")
 
 # Keep track of time elapsed and running averages
 start = time.time()
@@ -224,6 +341,7 @@ plot_loss_total = 0  # Reset every plot_every
 lr = args.lr
 progress = 0.0
 avg_loss = 0.0
+total_batch_count = 0
 for epoch in range(1, args.n_epochs + 1):
     # Get training data for this cycle
     if epoch > 5:
@@ -239,6 +357,7 @@ for epoch in range(1, args.n_epochs + 1):
     batch_count = 0
 
     for _ in range(len(pairs) // batch_size):
+        total_batch_count += 1
         # Print progress every 100 batches to reduce I/O overhead
         if _ % 1 == 0:
             progress = (
@@ -252,11 +371,12 @@ for epoch in range(1, args.n_epochs + 1):
             )
             expected_time_str = helpers.format_time(expected_time_sec)
             print(
-                "%cEpoch: %d/%d, Loss: %f, Progress: %f%%, Expected Time: %s"
+                "%cEpoch: %d/%d, Batch: %d, Loss: %f, Progress: %f%%, Expected Time: %s"
                 % (
                     13,
                     epoch,
                     args.n_epochs,
+                    total_batch_count
                     avg_loss if batch_count > 0 else 0,
                     progress,
                     expected_time_str,
@@ -303,6 +423,17 @@ for epoch in range(1, args.n_epochs + 1):
         # avg_loss = epoch_loss / batch_count
         avg_loss = batch_loss
 
+        # Calculate perplexity every 10000 batches
+        if total_batch_count % 10000 == 0 and test_inputs is not None:
+            print(f"\n\nCalculating perplexity at batch {total_batch_count}...")
+            # Simple perplexity calculation using current loss
+            # Perplexity = exp(average_loss)
+            current_ppl = math.exp(min(avg_loss, 10))  # Cap to prevent overflow
+            print(
+                f"Approximate Perplexity at batch {total_batch_count}: {current_ppl:.4f}"
+            )
+            print("Continuing training...\n")
+
         # Check for problematic loss values
         if torch.isnan(torch.tensor(batch_loss)):
             print(f"Problematic loss detected: {batch_loss}")
@@ -313,6 +444,8 @@ for epoch in range(1, args.n_epochs + 1):
     # Keep track of loss
     print_loss_total += avg_loss
     plot_loss_total += avg_loss
+    # if total_batch_count % 10000 == 0:
+    #     # get test perplexity for Figure 5
 
     if epoch == 0:
         continue
