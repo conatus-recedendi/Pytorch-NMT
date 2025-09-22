@@ -148,7 +148,8 @@ def calculate_perplexity(
                         target_di[non_pad_mask].shape,
                     )
                     step_loss = criterion(
-                        decoder_output[non_pad_mask], target_di[non_pad_mask]
+                        nn.LogSoftmax(decoder_output[non_pad_mask], dim=1),
+                        target_di[non_pad_mask],
                     )
                     print(step_loss)
                     batch_loss += step_loss.item() * non_pad_mask.sum().item()
