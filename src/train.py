@@ -146,6 +146,7 @@ def calculate_perplexity(
                     step_loss = criterion(
                         decoder_output[non_pad_mask], target_di[non_pad_mask]
                     )
+                    print(step_loss)
                     batch_loss += step_loss.item() * non_pad_mask.sum().item()
                     valid_tokens += non_pad_mask.sum().item()
 
@@ -154,15 +155,16 @@ def calculate_perplexity(
             total_loss += batch_loss
             total_tokens += valid_tokens
 
-    encoder.train()
-    decoder.train()
+    # encoder.train()
+    # decoder.train()
 
     if total_tokens == 0:
         return float("inf")
 
     avg_loss = total_loss / total_tokens
     print(f"Avg Loss: {avg_loss:.4f}, Total Tokens: {total_tokens}")
-    perplexity = math.exp(avg_loss)
+    # perplexity = math.exp(avg_loss)
+    perplexity = avg_loss
     return perplexity
 
 
