@@ -143,6 +143,10 @@ def calculate_perplexity(
                 # 패딩 토큰(0) 제외
                 non_pad_mask = target_di != 0
                 if non_pad_mask.sum() > 0:
+                    print(
+                        decoder_output[non_pad_mask].shape,
+                        target_di[non_pad_mask].shape,
+                    )
                     step_loss = criterion(
                         decoder_output[non_pad_mask], target_di[non_pad_mask]
                     )
