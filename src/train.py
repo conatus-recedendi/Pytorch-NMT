@@ -136,7 +136,7 @@ def calculate_perplexity(
             batch_loss = 0
             valid_tokens = 0
 
-            # Teacher forcing for evaluation
+            # No teacher forcing for evaluation - use model's own predictions
             for di in range(target_length):
                 decoder_output, decoder_context, decoder_hidden, decoder_attention = (
                     decoder(
@@ -149,19 +149,20 @@ def calculate_perplexity(
                 non_pad_mask = target_di != 0
                 if non_pad_mask.sum() > 0:
                     logsoftmax = nn.LogSoftmax(dim=0)
-                    # print(
-                    #     logsoftmax[non_pad_mask].shape,
-                    #     target_di[non_pad_mask].shape,
-                    # )
                     step_loss = criterion(
                         logsoftmax(decoder_output[non_pad_mask]),
                         target_di[non_pad_mask],
                     )
-                    # print(step_lossz)
                     batch_loss += step_loss.item() * non_pad_mask.sum().item()
                     valid_tokens += non_pad_mask.sum().item()
 
-                decoder_input = target_batch[:, di].unsqueeze(1)
+                # Use model's prediction as next input (no teacher forcing)
+                topv, topi = decoder_output.data.topk(1, dim=1)
+                decoder_input = topi  # [batch_size, 1]
+
+                # Early stopping if all sequences predict EOS
+                if (topi.squeeze() == Language.eos_token).all():
+                    break
 
             total_loss += batch_loss
             total_tokens += valid_tokens
@@ -208,71 +209,47 @@ def train(
 
     decoder_hidden = encoder_hidden
 
-    # Scheduled sampling
-    use_teacher_forcing = random.random() < args.teacher_forcing_ratio
+    # Scheduled sampling - disable teacher forcing
+    use_teacher_forcing = False  # No teacher forcing
 
     # Pre-allocate tensors for better performance
-    all_decoder_outputs = []
     logsoftmax = nn.LogSoftmax(dim=1)
-    if use_teacher_forcing:
-        # Feed target as the next input
-        for di in range(target_length):
-            decoder_output, decoder_context, decoder_hidden, decoder_attention = (
-                decoder(decoder_input, decoder_context, decoder_hidden, encoder_outputs)
-            )
-            all_decoder_outputs.append(decoder_output)
-            decoder_input = target[:, di].unsqueeze(1)  # [batch_size, 1]
 
-        # Compute loss for all timesteps at once
-        decoder_outputs_tensor = torch.stack(
-            all_decoder_outputs, dim=1
-        )  # [batch_size, seq_len, vocab_size]
-        decoder_outputs_flat = decoder_outputs_tensor.view(
-            -1, decoder_outputs_tensor.size(-1)
+    # Always use previous prediction as next input (no teacher forcing)
+    loss_sum = 0
+    valid_steps = 0
+    for di in range(target_length):
+        decoder_output, decoder_context, decoder_hidden, decoder_attention = decoder(
+            decoder_input, decoder_context, decoder_hidden, encoder_outputs
         )
-        target_flat = target.view(-1)
+        target_di = target[:, di].squeeze()
 
-        # NLLLoss with ignore_index will handle padding automatically
-        loss = criterion(logsoftmax(decoder_outputs_flat), target_flat)
-    else:
-        # Use previous prediction as next input
-        loss_sum = 0
-        valid_steps = 0
-        for di in range(target_length):
-            decoder_output, decoder_context, decoder_hidden, decoder_attention = (
-                decoder(decoder_input, decoder_context, decoder_hidden, encoder_outputs)
+        # Check for NaN in intermediate values
+        if torch.isnan(decoder_output).any():
+            print(f"NaN in decoder_output at step {di}")
+            return float("inf")
+
+        step_loss = criterion(logsoftmax(decoder_output), target_di)
+
+        if torch.isnan(step_loss):
+            print(f"NaN in step_loss at step {di}")
+            print(
+                f"decoder_output range: [{decoder_output.min():.4f}, {decoder_output.max():.4f}]"
             )
-            target_di = target[:, di].squeeze()
+            print(f"target_di: {target_di}")
+            return float("inf")
 
-            # Check for NaN in intermediate values
-            if torch.isnan(decoder_output).any():
-                print(f"NaN in decoder_output at step {di}")
-                return float("inf")
+        loss_sum += step_loss
+        valid_steps += 1
 
-            step_loss = criterion(logsoftmax(decoder_output), target_di)
-            # print(logsoftmax(decoder_output), decoder_output, target_di)
-            # until wait for user input
-            # input("Press Enter to continue...")
+        topv, topi = decoder_output.data.topk(1, dim=1)
+        decoder_input = topi  # [batch_size, 1]
 
-            if torch.isnan(step_loss):
-                print(f"NaN in step_loss at step {di}")
-                print(
-                    f"decoder_output range: [{decoder_output.min():.4f}, {decoder_output.max():.4f}]"
-                )
-                print(f"target_di: {target_di}")
-                return float("inf")
+        # Early stopping if all sequences predict EOS (optional)
+        # if (topi.squeeze() == Language.eos_token).all():
+        #     break
 
-            loss_sum += step_loss
-            valid_steps += 1
-
-            topv, topi = decoder_output.data.topk(1, dim=1)
-            decoder_input = topi  # [batch_size, 1]
-
-            # Early stopping is problematic in batch processing - remove for now
-            # if (topi == Language.eos_token).all():
-            #     break
-
-        loss = loss_sum / valid_steps if valid_steps > 0 else loss_sum
+    loss = loss_sum / valid_steps if valid_steps > 0 else loss_sum
 
     # Backpropagation
     if scaler is not None:
