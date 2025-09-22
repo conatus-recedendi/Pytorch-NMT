@@ -320,8 +320,8 @@ test_inputs = None
 test_targets = None
 try:
     test_inputs, test_targets = load_test_data(
-        "./data/test.14.en",
-        "./data/test.14.de",
+        "./rewrite/test.14.en",
+        "./rewrite/test.14.de",
         input_lang,
         output_lang,
         device,
