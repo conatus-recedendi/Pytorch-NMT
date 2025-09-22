@@ -333,7 +333,7 @@ decoder = decoder.to(device)
 # Initialize optimizers and criterion
 encoder_optimizer = optim.Adam(encoder.parameters(), lr=args.lr)
 decoder_optimizer = optim.Adam(decoder.parameters(), lr=args.lr)
-criterion = nn.NLLLoss(ignore_index=0)  # Ignore padding tokens
+criterion = nn.NLLLoss()  # Ignore padding tokens
 
 # Initialize mixed precision scaler - Disable for debugging
 scaler = None  # GradScaler() if device.type == "cuda" else None
@@ -348,7 +348,7 @@ try:
         input_lang,
         output_lang,
         device,
-        max_samples=1000,
+        max_samples=2716,
     )
     print(f"Loaded {len(test_inputs)} test samples for perplexity calculation")
 except FileNotFoundError:
