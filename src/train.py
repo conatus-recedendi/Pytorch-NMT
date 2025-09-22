@@ -204,7 +204,7 @@ def train(
 
     # Pre-allocate tensors for better performance
     all_decoder_outputs = []
-
+    logsoftmax = nn.LogSoftmax(dim=1)
     if use_teacher_forcing:
         # Feed target as the next input
         for di in range(target_length):
@@ -224,7 +224,7 @@ def train(
         target_flat = target.view(-1)
 
         # NLLLoss with ignore_index will handle padding automatically
-        loss = criterion(decoder_outputs_flat, target_flat)
+        loss = criterion(logsoftmax(decoder_outputs_flat), target_flat)
     else:
         # Use previous prediction as next input
         loss_sum = 0
@@ -240,7 +240,7 @@ def train(
                 print(f"NaN in decoder_output at step {di}")
                 return float("inf")
 
-            step_loss = criterion(decoder_output, target_di)
+            step_loss = criterion(logsoftmax(decoder_output), target_di)
 
             if torch.isnan(step_loss):
                 print(f"NaN in step_loss at step {di}")
