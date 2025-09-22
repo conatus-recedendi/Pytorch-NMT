@@ -20,10 +20,10 @@ def normalize_string(s):
     # <unk> 은 보존
     s = re.sub(r"([.!?])", r" \1", s)
     # <unk> 토큰을 임시로 보호하고, 다른 특수문자들은 공백으로 변환
-    s = re.sub(r"<UNK>", "TEMPUNKTOKEN", s)  # <unk>를 임시 토큰으로 변경
+    s = re.sub(r"<unk>", "TEMPUNKTOKEN", s)  # <unk>를 임시 토큰으로 변경
     s = re.sub(r"[^a-zA-Z.!?\s]+", r" ", s)  # 영문자, 구두점, 공백 외 제거
     # s = re.sub(r"TEMPUNKTOKEN", "<UNK>", s)  # 임시 토큰을 <unk>로 복원
-    s = re.sub(r"TEMPUNKTOKEN", "<unk>", s)  # 임시 토큰을 <unk>로 복원
+    s = re.sub(r"TEMPUNKTOKEN", "<UNK>", s)  # 임시 토큰을 <unk>로 복원
     return s
 
 
