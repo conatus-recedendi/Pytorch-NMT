@@ -277,7 +277,6 @@ def train(
         #     break
 
     loss = loss_sum / valid_tokens if valid_tokens > 0 else loss_sum
-    loss /= batch_size  # Normalize by batch size
 
     # Backpropagation
     if scaler is not None:
