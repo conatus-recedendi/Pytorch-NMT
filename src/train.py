@@ -157,8 +157,8 @@ def calculate_perplexity(
 
                     # Decoder에서 이미 F.log_softmax가 적용되어 있으므로 바로 사용
                     step_loss = criterion(
-                        decoder_output,  # 이미 log_softmax 적용된 상태
-                        target_di,
+                        decoder_output[non_pad_mask],  # 이미 log_softmax 적용된 상태
+                        target_di[non_pad_mask],
                     )
 
                     # 실제 유효한 토큰 개수만큼 loss와 토큰 수 누적
@@ -247,6 +247,7 @@ def train(
             decoder_input, decoder_context, decoder_hidden, encoder_outputs
         )
         target_di = target[:, di].squeeze()
+        non_pad_mask = target_di != 0
 
         # Check for NaN in intermediate values
         if torch.isnan(decoder_output).any():
@@ -254,7 +255,7 @@ def train(
             return float("inf")
 
         # Decoder output is already log_softmax applied
-        step_loss = criterion(decoder_output, target_di)
+        step_loss = criterion(decoder_output[non_pad_mask], target_di[non_pad_mask])
 
         if torch.isnan(step_loss):
             print(f"NaN in step_loss at step {di}")
@@ -265,7 +266,7 @@ def train(
             return float("inf")
 
         loss_sum += step_loss
-        valid_steps += 1
+        valid_tokens += non_pad_mask.sum().item()
 
         topv, topi = decoder_output.data.topk(1, dim=1)
         decoder_input = topi  # [batch_size, 1]
@@ -274,7 +275,7 @@ def train(
         # if (topi.squeeze() == Language.eos_token).all():
         #     break
 
-    loss = loss_sum / valid_steps if valid_steps > 0 else loss_sum
+    loss = loss_sum / valid_tokens if valid_tokens > 0 else loss_sum
     loss /= batch_size  # Normalize by batch size
 
     # Backpropagation
