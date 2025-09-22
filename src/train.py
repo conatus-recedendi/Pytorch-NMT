@@ -149,7 +149,7 @@ def calculate_perplexity(
                 step_loss = criterion(
                     logsoftmax(decoder_output[non_pad_mask]), target_di[non_pad_mask]
                 )
-                print(step_loss)
+                # print(step_lossz)
                 batch_loss += step_loss.item() * non_pad_mask.sum().item()
                 valid_tokens += non_pad_mask.sum().item()
 
@@ -241,6 +241,8 @@ def train(
 
             step_loss = criterion(logsoftmax(decoder_output), target_di)
             print(logsoftmax(decoder_output), decoder_output, target_di)
+            # until wait for user input
+            input("Press Enter to continue...")
 
             if torch.isnan(step_loss):
                 print(f"NaN in step_loss at step {di}")
