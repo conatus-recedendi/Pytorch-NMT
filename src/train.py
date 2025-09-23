@@ -18,7 +18,7 @@ import torch.nn.functional as F
 # Parse argument for language to train
 parser = argparse.ArgumentParser()
 parser.add_argument(
-    "--attn_model", type=str, help="attention type: dot, general, concat"
+    "--attn_model", type=str, help="attention type: dot, general, concat, base"
 )
 parser.add_argument("--embedding_size", type=int)
 parser.add_argument("--hidden_size", type=int)
