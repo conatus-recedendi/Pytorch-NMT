@@ -16,6 +16,7 @@ class AttentionDecoderRNN(nn.Module):
         attn_model,
         n_layers=1,
         dropout=0.1,
+        local=None,
     ):
         super(AttentionDecoderRNN, self).__init__()
         self.batch_size = batch_size
@@ -25,6 +26,7 @@ class AttentionDecoderRNN(nn.Module):
         self.attn_model = attn_model
         self.n_layers = n_layers
         self.dropout = dropout
+        self.local = local  # For local attention
 
         # Define layers
         self.embedding = nn.Embedding(tgt_vocab_size, embedding_size)
@@ -36,7 +38,9 @@ class AttentionDecoderRNN(nn.Module):
 
         # Choose attention model
         if attn_model is not None:
-            self.attention = Attention(attn_model, hidden_size)
+            self.attention = Attention(
+                attn_model, hidden_size=hidden_size, local=self.local
+            )
 
         # Initialize parameters with U[-0.1, 0.1]
         self._initialize_weights()

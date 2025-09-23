@@ -35,6 +35,7 @@ parser.add_argument("--input", type=str, help="src -> tgt")
 parser.add_argument("--device", type=str, help="cpu or cuda")
 parser.add_argument("--seed", type=str, help="random seed")
 parser.add_argument("--batch_size", type=int, help="batch size")
+parser.add_argument("--local", type=str, help="local-m, local-p, None", default=None)
 args = parser.parse_args()
 
 print(sys.argv)
@@ -339,6 +340,7 @@ decoder = AttentionDecoderRNN(
     args.attn_model,
     args.n_layers,
     args.dropout,
+    args.local,
 )
 # Move models to device
 encoder = encoder.to(device)
