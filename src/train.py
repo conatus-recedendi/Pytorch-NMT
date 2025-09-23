@@ -72,11 +72,11 @@ def load_test_data(
     for en_sent, de_sent in test_pairs:
         # 문장을 인덱스로 변환
         en_indexes = [
-            input_lang.word2index.get(word, input_lang.word2index.get("<unk>", 1))
+            input_lang.word2index.get(word, input_lang.word2index.get("<UNK>", 3))
             for word in en_sent.split()
         ]
         de_indexes = [
-            output_lang.word2index.get(word, output_lang.word2index.get("<unk>", 1))
+            output_lang.word2index.get(word, output_lang.word2index.get("<UNK>", 3))
             for word in de_sent.split()
         ]
 
@@ -338,7 +338,7 @@ input_lang, output_lang, pairs = etl.prepare_data(args.language)
 print(input_lang)
 # Initialize models
 encoder = EncoderRNN(
-    128,  # max batch size for init_hidden
+    args.batch_size,  # max batch size for init_hidden
     input_lang.n_words,
     args.embedding_size,
     args.hidden_size,
@@ -347,7 +347,7 @@ encoder = EncoderRNN(
 )
 
 decoder = AttentionDecoderRNN(
-    128,  # max batch size for initialization
+    args.batch_size,  # max batch size for initialization
     output_lang.n_words,
     args.embedding_size,
     args.hidden_size,
