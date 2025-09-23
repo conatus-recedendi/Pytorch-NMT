@@ -147,6 +147,7 @@ def calculate_perplexity(
             valid_tokens = 0
 
             # No teacher forcing for evaluation - use model's own predictions
+            all_decoder_outputs = []
             for di in range(target_length):
                 decoder_output, decoder_context, decoder_hidden, decoder_attention = (
                     decoder(
@@ -155,39 +156,22 @@ def calculate_perplexity(
                 )
 
                 target_di = target_batch[:, di].squeeze()
+                all_decoder_outputs.append(decoder_output)
+                decoder_input = target[:, di].unsqueeze(1)  # [batch_size, 1]
                 # 패딩 토큰(2) 제외 - 일반적인 배치 크기 처리
+            decoder_outputs_tensor = torch.stack(
+                all_decoder_outputs, dim=1
+            )  # [batch_size, seq_len, vocab_size]
+            decoder_outputs_flat = decoder_outputs_tensor.view(
+                -1, decoder_outputs_tensor.size(-1)
+            )
+            target_flat = target.view(-1)
+            # target_di shape: [batch_size] when squeezed
+            loss = criterion(decoder_outputs_flat, target_flat)
+            valid_tokens = (target_flat != 2).sum().item()  # PAD token = 2
+            loss = loss / valid_tokens if valid_tokens > 0 else loss
 
-                # target_di shape: [batch_size] when squeezed
-                non_pad_mask = target_di != 2
-
-                if non_pad_mask.any():  # 패딩이 아닌 토큰이 있는 경우
-                    # decoder_output: [batch_size, vocab_size] (이미 log_softmax 적용됨)
-                    # target_di: [batch_size]
-
-                    step_loss = criterion(
-                        decoder_output[non_pad_mask],  # 이미 log_softmax 적용된 상태
-                        target_di[non_pad_mask],
-                    )
-                    # print(step_loss)
-
-                    # print(
-                    #     decoder_output[non_pad_mask].shape,
-                    #     target_di[non_pad_mask].shape,
-                    # )
-                    # 실제 유효한 토큰 개수만큼 loss와 토큰 수 누적
-                    # 주의: step_loss.item()은 이미 배치 전체에 대한 평균 loss
-                    batch_loss += step_loss.item()  # 가중치 제거
-                    valid_tokens += non_pad_mask.sum().item()
-
-                # Use model's prediction as next input (no teacher forcing)
-                topv, topi = decoder_output.data.topk(1, dim=1)
-                decoder_input = topi  # [batch_size, 1]
-
-                # Early stopping if all sequences predict EOS
-                if (topi.squeeze() == Language.eos_token).all():
-                    break
-
-            total_loss += batch_loss
+            total_loss += loss
             total_tokens += valid_tokens
 
     # 원래 training 상태로 복원
