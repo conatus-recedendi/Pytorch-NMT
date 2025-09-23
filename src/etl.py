@@ -6,7 +6,7 @@ from language import Language
 Data Extraction
 """
 
-max_length = 20
+max_length = 50
 
 
 def filter_pair(p):
