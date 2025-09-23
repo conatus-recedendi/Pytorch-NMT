@@ -149,13 +149,14 @@ def calculate_perplexity(
             # No teacher forcing for evaluation - use model's own predictions
             all_decoder_outputs = []
             for di in range(target_length):
+                print(decoder_input.shape, decoder_context.shape, decoder_hidden.shape)
                 decoder_output, decoder_context, decoder_hidden, decoder_attention = (
                     decoder(
                         decoder_input, decoder_context, decoder_hidden, encoder_outputs
                     )
                 )
 
-                target_di = target_batch[:, di].squeeze()
+                # target_di = target_batch[:, di].squeeze()
                 all_decoder_outputs.append(decoder_output)
                 decoder_input = target[:, di].unsqueeze(1)  # [batch_size, 1]
                 # 패딩 토큰(2) 제외 - 일반적인 배치 크기 처리
