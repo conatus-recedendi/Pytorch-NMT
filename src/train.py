@@ -158,7 +158,7 @@ def calculate_perplexity(
 
                 # target_di = target_batch[:, di].squeeze()
                 all_decoder_outputs.append(decoder_output)
-                decoder_input = target[:, di].unsqueeze(1)  # [batch_size, 1]
+                decoder_input = batch_targets[:, di].unsqueeze(1)  # [batch_size, 1]
                 # 패딩 토큰(2) 제외 - 일반적인 배치 크기 처리
             decoder_outputs_tensor = torch.stack(
                 all_decoder_outputs, dim=1
@@ -166,7 +166,7 @@ def calculate_perplexity(
             decoder_outputs_flat = decoder_outputs_tensor.view(
                 -1, decoder_outputs_tensor.size(-1)
             )
-            target_flat = target.view(-1)
+            target_flat = batch_targets.view(-1)
             # target_di shape: [batch_size] when squeezed
             loss = criterion(decoder_outputs_flat, target_flat)
             valid_tokens = (target_flat != 2).sum().item()  # PAD token = 2
