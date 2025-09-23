@@ -170,7 +170,7 @@ def calculate_perplexity(
             # target_di shape: [batch_size] when squeezed
             loss = criterion(decoder_outputs_flat, target_flat)
             valid_tokens = (target_flat != 2).sum().item()  # PAD token = 2
-            loss = loss / valid_tokens if valid_tokens > 0 else loss
+            # loss = loss / valid_tokens if valid_tokens > 0 else loss
 
             total_loss += loss
             total_tokens += valid_tokens
