@@ -21,6 +21,7 @@ def show_plot(points):
     loc = ticker.MultipleLocator(base=0.2)  # put ticks at regular intervals
     ax.yaxis.set_major_locator(loc)
     plt.plot(points)
+    plt.savefig("plot.png")
 
 
 def as_minutes(s):
