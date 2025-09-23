@@ -396,6 +396,8 @@ lr = args.lr
 progress = 0.0
 avg_loss = 0.0
 total_batch_count = 0
+batch_size = args.batch_size
+print("max total_Batch_count: ", (len(pairs) // batch_size) * args.n_epochs)
 for epoch in range(1, args.n_epochs + 1):
     # Get training data for this cycle
     if epoch > 5:
