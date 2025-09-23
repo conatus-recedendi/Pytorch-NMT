@@ -521,12 +521,22 @@ for epoch in range(1, args.n_epochs + 1):
         plot_loss_total = 0
 
 
-# Save our models
-torch.save(encoder.state_dict(), "./data/encoder_params_{}".format(args.language))
-torch.save(decoder.state_dict(), "./data/decoder_params_{}".format(args.language))
-torch.save(
-    decoder.attention.state_dict(), "./data/attention_params_{}".format(args.language)
+# dropout, attn_model, local
+id = "attn=%s,local=%s,dropout=d%.2f" % (
+    args.attn_model,
+    args.local if args.local else "global",
+    args.dropout,
 )
+# Save our models
+torch.save(encoder.state_dict(), "./data/encoder_model_{}".format(id))
+torch.save(decoder.state_dict(), "./data/decoder_model_{}".format(id))
+
+torch.save(decoder.attention.state_dict(), "./data/attention_model_{}".format(id))
+# torch.save(encoder.state_dict(), "./data/encoder_params_{}".format(args.language))
+# torch.save(decoder.state_dict(), "./data/decoder_params_{}".format(args.language))
+# torch.save(
+#     decoder.attention.state_dict(), "./data/attention_params_{}".format(args.language)
+# )
 
 # Plot loss
 helpers.show_plot(plot_losses)
