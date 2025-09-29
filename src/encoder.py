@@ -23,7 +23,7 @@ class EncoderRNN(nn.Module):
 
         self.embedding = nn.Embedding(src_vocab_size, embedding_size)
         self.dropout = nn.Dropout(dropout)
-        self.rnn = nn.GRU(embedding_size, hidden_size, n_layers)
+        self.rnn = nn.LSTM(embedding_size, hidden_size, n_layers)
 
         # Learnable initial hidden state
         self.init_hidden_param = nn.Parameter(torch.randn(n_layers, 1, hidden_size))
