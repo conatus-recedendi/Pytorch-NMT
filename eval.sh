@@ -14,8 +14,8 @@ python src/eval.py \
     --n_layers 4 \
     --dropout 0.0 \
     --language de \
-    --input_file test_sentences.txt \
-    --output_file translations.txt \
+    --input_file rewrite/test.14.en \
+    --output_file base.bleu \
     --max_len 50 \
     --beam_size 5 \
     --batch_size 1 \

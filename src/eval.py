@@ -19,7 +19,12 @@ parser.add_argument("--hidden_size", type=int)
 parser.add_argument("--n_layers", type=int)
 parser.add_argument("--dropout", type=float)
 parser.add_argument("--language", type=str, help="specific which language.")
-parser.add_argument("--input", type=str, help="src -> tgt")
+parser.add_argument(
+    "--input_file", type=str, help="input file path with source sentences"
+)
+parser.add_argument(
+    "--output_file", type=str, help="output file path for translations (optional)"
+)
 parser.add_argument("--max_len", type=int)
 parser.add_argument("--beam_size", type=int)
 parser.add_argument("--batch_size", type=int)
@@ -35,7 +40,7 @@ torch.random.manual_seed(args.seed)
 
 device = torch.device(args.device)
 
-print("input: %s" % args.input)
+print("input file: %s" % args.input_file)
 
 # Initialize models
 encoder = EncoderRNN(
@@ -75,7 +80,7 @@ encoder = encoder.to(device)
 decoder = decoder.to(device)
 
 
-def evaluate(sentence, max_len=10):
+def evaluate_sentence(sentence, max_len=10):
     input = etl.tensor_from_sentence(input_lang, sentence, device)
     input_length = input.size()[0]
 
@@ -111,27 +116,50 @@ def evaluate(sentence, max_len=10):
     #  print(beam_words.shape)
     beam_words = beam_words.squeeze(3).squeeze(1).transpose(0, 1)
     beam_length = metadata["topk_length"]
-    print_sentence(beam_words, beam_length[0], "beam")
 
-    """
-    beam_words, _, _= beam_decode(
-        decoder_context,
-        decoder_hidden,
-        encoder_outputs,
-        max_len,
-        beam_size=5
-    )
-    # [batch_size, beam_size, max_len] -> [beam_size, max_len] because we
-    # batch_size if 1.
-    beam_words = beam_words[0]
-    #  print(beam_words)
-    print_sentence(beam_words, 'beam')
+    # Get best beam translation
+    best_beam_ids = beam_words[0][: beam_length[0][0]]
+    best_beam_words = [output_lang.index2word[id] for id in best_beam_ids.tolist()]
+    best_beam_sentence = assemble_sentence(best_beam_words)
 
-    """
+    # Also get greedy translation for comparison
     greedy_words, greedy_attention = greedy_decode(
         decoder_context, decoder_hidden, encoder_outputs, max_len
     )
-    print_sentence(greedy_words)
+    greedy_sentence = assemble_sentence(greedy_words)
+
+    return best_beam_sentence, greedy_sentence
+
+
+def evaluate_file(input_file_path, output_file_path=None, max_len=10):
+    """Evaluate sentences from input file"""
+    results = []
+
+    # Read input sentences
+    with open(input_file_path, "r", encoding="utf-8") as f:
+        sentences = [line.strip() for line in f if line.strip()]
+
+    # Process each sentence
+    for sentence in sentences:
+        normalized_sentence = helpers.normalize_string(sentence)
+        beam_translation, greedy_translation = evaluate_sentence(
+            normalized_sentence, max_len
+        )
+
+        # Use beam translation as default output
+        print(beam_translation)
+
+        results.append(
+            {"source": sentence, "beam": beam_translation, "greedy": greedy_translation}
+        )
+
+    # Save results to output file if specified
+    if output_file_path:
+        with open(output_file_path, "w", encoding="utf-8") as f:
+            for result in results:
+                f.write(f"{result['beam']}\n")
+
+    return results
 
 
 def greedy_decode(decoder_context, decoder_hidden, encoder_outputs, max_len):
@@ -253,5 +281,9 @@ def print_sentence(words, lengths=None, mode="greedy"):
             print("beam %d > %s" % (i, sentence))
 
 
-input_sentence = helpers.normalize_string(args.input)
-evaluate(input_sentence, args.max_len)
+# Evaluate sentences from input file
+if args.input_file:
+    evaluate_file(args.input_file, args.output_file, args.max_len)
+else:
+    print("Please provide --input_file argument")
+    exit(1)
