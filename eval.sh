@@ -14,11 +14,10 @@ python src/eval.py \
     --n_layers 4 \
     --dropout 0.0 \
     --language de \
-    --input "i love you." \
+    --input_file test_sentences.txt \
+    --output_file translations.txt \
     --max_len 50 \
     --beam_size 5 \
-    --batch_size 128 \
+    --batch_size 1 \
     --device cpu \
-    --seed 19 \
-
-/
+    --seed 19
