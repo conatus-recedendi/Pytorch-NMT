@@ -17,7 +17,7 @@ python src/eval.py \
     --input "i love you." \
     --max_len 50 \
     --beam_size 5 \
-    --batch_size 1 \
+    --batch_size 128 \
     --device cpu \
     --seed 19 \
 

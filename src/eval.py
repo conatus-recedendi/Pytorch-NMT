@@ -39,6 +39,7 @@ print("input: %s" % args.input)
 
 # Initialize models
 encoder = EncoderRNN(
+    args.batch_size,
     input_lang.n_words,
     args.embedding_size,
     args.hidden_size,
@@ -47,6 +48,7 @@ encoder = EncoderRNN(
 )
 
 decoder = AttentionDecoderRNN(
+    args.batch_size,
     output_lang.n_words,
     args.embedding_size,
     args.hidden_size,
