@@ -47,8 +47,10 @@ class EncoderRNN(nn.Module):
         # inputs: [batch, len]
         embedded = self.embedding(inputs)  # [batch, len, embedding_size]
         embedded = self.dropout(embedded)
-        embedded = embedded.transpose(0, 1)  # [len, batch, embedding_size] for GRU
-        output, hidden_state = self.rnn(embedded, hidden_state)
+        embedded = embedded.transpose(0, 1)  # [len, batch, embedding_size] for LSTM
+        output, hidden_state = self.rnn(
+            embedded, hidden_state
+        )  # hidden_state is (h_n, c_n) tuple
         return output, hidden_state
 
     def init_hidden(self, device, actual_batch_size=None):
