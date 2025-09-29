@@ -56,6 +56,11 @@ decoder = AttentionDecoderRNN(
     args.local,
 )
 
+id = "attn=%s,local=%s,dropout=d%.2f" % (
+    args.attn_model,
+    args.local if args.local else "global",
+    args.dropout,
+)
 # Load model parameters
 encoder.load_state_dict(torch.load("./data/encoder_params_{}".format(args.language)))
 decoder.load_state_dict(torch.load("./data/decoder_params_{}".format(args.language)))

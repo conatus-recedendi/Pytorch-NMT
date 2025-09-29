@@ -8,14 +8,14 @@
 
 
 python src/eval.py \
-    --attn_model general \
-    --embedding_size 256 \
-    --hidden_size 256 \
-    --n_layers 2 \
-    --dropout 0.1 \
-    --language afr \
+    --attn_model base \
+    --embedding_size 1000 \
+    --hidden_size 1000 \
+    --n_layers 4 \
+    --dropout 0.0 \
+    --language de \
     --input "i love you." \
-    --max_len 10 \
+    --max_len 50 \
     --beam_size 5 \
     --batch_size 1 \
     --device cpu \
