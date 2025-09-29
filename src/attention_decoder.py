@@ -31,7 +31,7 @@ class AttentionDecoderRNN(nn.Module):
         # Define layers
         self.embedding = nn.Embedding(tgt_vocab_size, embedding_size)
         self.dropout = nn.Dropout(dropout)
-        self.gru = nn.GRU(
+        self.gru = nn.LSTM(
             hidden_size + embedding_size, hidden_size, n_layers, dropout=dropout
         )
         self.out = nn.Linear(hidden_size * 2, tgt_vocab_size)
