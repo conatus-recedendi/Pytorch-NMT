@@ -55,8 +55,15 @@ class EncoderRNN(nn.Module):
         batch_size = (
             actual_batch_size if actual_batch_size is not None else self.batch_size
         )
+        # LSTM requires both hidden state and cell state
         # Use learnable initial hidden state, expanded for batch size
         hidden_state = self.init_hidden_param.expand(
             self.n_layers, batch_size, self.hidden_size
         ).contiguous()
-        return hidden_state
+
+        # Initialize cell state to zeros for LSTM
+        cell_state = torch.zeros(
+            self.n_layers, batch_size, self.hidden_size, device=device
+        )
+
+        return (hidden_state, cell_state)
