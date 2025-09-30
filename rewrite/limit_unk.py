@@ -51,6 +51,8 @@ if __name__ == "__main__":
     )
     parser.add_argument("--out_en", type=str, default="train.50k.en")
     parser.add_argument("--out_de", type=str, default="train.50k.de")
+    parser.add_argument("--ref_en", type=str, default="train.50k.en")
+    parser.add_argument("--ref_de", type=str, default="train.50k.de")
     args = parser.parse_args()
 
     # 입력 파일 경로
@@ -58,9 +60,13 @@ if __name__ == "__main__":
     train_de = args.train_de
 
     # 어휘 구축 (각각 별도)
-    vocab_en = build_vocab(train_en, vocab_size=50000)
+    # vocab_en = build_vocab(train_en, vocab_size=50000)
+    vocab_en = build_vocab(args.ref_en, vocab_size=50000)
+
     print(list(vocab_en)[:10])
-    vocab_de = build_vocab(train_de, vocab_size=50000)
+    # vocab_de = build_vocab(train_de, vocab_size=50000)
+    vocab_de = build_vocab(args.ref_de, vocab_size=50000)
+
     print(len(vocab_en), len(vocab_de))
 
     # 출력 파일 경로
