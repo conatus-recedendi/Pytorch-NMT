@@ -7,7 +7,7 @@
 #
 
 
-OMP_NUM_THREADS=15 MKL_NUM_THREADS=15 python src/train.py \
+OMP_NUM_THREADS=20 MKL_NUM_THREADS=20 python src/train.py \
     --attn_model base \
     --embedding_size 1000 \
     --hidden_size 1000 \
