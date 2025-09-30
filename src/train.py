@@ -522,7 +522,7 @@ for epoch in range(1, args.n_epochs + 1):
 
 
 # dropout, attn_model, local
-id = "attn=%s,local=%s,dropout=d%.2f" % (
+id = "id=1_attn=%s,local=%s,dropout=d%.2f" % (
     args.attn_model,
     args.local if args.local else "global",
     args.dropout,
