@@ -497,12 +497,6 @@ for epoch in range(1, args.n_epochs + 1):
                 f"Approximate Perplexity at batch {total_batch_count}: {current_ppl:.4f}"
             )
             print("Continuing training...\n")
-
-        # Check for problematic loss values
-        if torch.isnan(torch.tensor(batch_loss)):
-            print(f"Problematic loss detected: {batch_loss}")
-            print(f"Learning rate: {encoder_optimizer.param_groups[0]['lr']}")
-            break
     # print(input.shape)
 
     # Keep track of loss
@@ -511,6 +505,17 @@ for epoch in range(1, args.n_epochs + 1):
     # if total_batch_count % 10000 == 0:
     #     # get test perplexity for Figure 5
 
+    id = "id=1_attn=%s,local=%s,dropout=d%.2f,epoch=%d" % (
+        args.attn_model,
+        args.local if args.local else "global",
+        args.dropout,
+        epoch,
+    )
+    # Save our models
+    torch.save(encoder.state_dict(), "./data/encoder_model_{}".format(id))
+    torch.save(decoder.state_dict(), "./data/decoder_model_{}".format(id))
+
+    torch.save(decoder.attention.state_dict(), "./data/attention_model_{}".format(id))
     if epoch == 0:
         continue
 
@@ -530,16 +535,16 @@ for epoch in range(1, args.n_epochs + 1):
 
 
 # dropout, attn_model, local
-id = "id=1_attn=%s,local=%s,dropout=d%.2f" % (
-    args.attn_model,
-    args.local if args.local else "global",
-    args.dropout,
-)
-# Save our models
-torch.save(encoder.state_dict(), "./data/encoder_model_{}".format(id))
-torch.save(decoder.state_dict(), "./data/decoder_model_{}".format(id))
+# id = "id=1_attn=%s,local=%s,dropout=d%.2f" % (
+#     args.attn_model,
+#     args.local if args.local else "global",
+#     args.dropout,
+# )
+# # Save our models
+# torch.save(encoder.state_dict(), "./data/encoder_model_{}".format(id))
+# torch.save(decoder.state_dict(), "./data/decoder_model_{}".format(id))
 
-torch.save(decoder.attention.state_dict(), "./data/attention_model_{}".format(id))
+# torch.save(decoder.attention.state_dict(), "./data/attention_model_{}".format(id))
 # torch.save(encoder.state_dict(), "./data/encoder_params_{}".format(args.language))
 # torch.save(decoder.state_dict(), "./data/decoder_params_{}".format(args.language))
 # torch.save(
