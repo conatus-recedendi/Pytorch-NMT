@@ -413,14 +413,19 @@ for epoch in range(1, args.n_epochs + 1):
                 ((_ + 1)) / ((len(pairs) // batch_size) * args.n_epochs)
                 + (epoch - 1) / args.n_epochs
             ) * 100
-            expected_time_sec = (
-                (time.time() - start)
-                / (((_ + 1) * (len(pairs) // batch_size)))
-                * (
-                    (len(pairs) // batch_size) * args.n_epochs
-                    - ((_ + 1) + epoch * (len(pairs) // batch_size))
-                )
-            )
+            # expected_time_sec = (
+            #     (time.time() - start)
+            #     / (((_ + 1) * (len(pairs) // batch_size)))
+            #     * (
+            #         (len(pairs) // batch_size) * args.n_epochs
+            #         - ((_ + 1) + epoch * (len(pairs) // batch_size))
+            #     )
+            # )
+            # 예상 시간 = 현재까지 걸린 시간 * (전체 데이터 수 / 현재까지 처리한 데이터 수)
+            total_data = (len(pairs) // batch_size) * args.n_epochs
+            processed_data = (_ + 1) + (epoch - 1) * (len(pairs) // batch_size)
+
+            expected_time_sec = (time.time() - start) * (total_data / processed_data)
             expected_time_str = helpers.format_time(expected_time_sec)
             print(
                 "%cEpoch: %d/%d, Batch: %d, Loss: %f, Progress: %f%%, Expected Time: %s"
