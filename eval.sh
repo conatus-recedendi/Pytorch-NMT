@@ -15,7 +15,7 @@ python src/eval.py \
     --dropout 0.0 \
     --language de \
     --input_file rewrite/test.14.en \
-    --output_file base.bleu \
+    --output_file test.14.bleu.output \
     --max_len 50 \
     --beam_size 5 \
     --batch_size 1 \
