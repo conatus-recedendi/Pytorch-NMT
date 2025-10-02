@@ -415,8 +415,11 @@ for epoch in range(1, args.n_epochs + 1):
             ) * 100
             expected_time_sec = (
                 (time.time() - start)
-                / (_ + 1)
-                * ((len(pairs) // batch_size) * args.n_epochs - (_ + 1) * epoch)
+                / (((_ + 1) * (len(pairs) // batch_size)))
+                * (
+                    (len(pairs) // batch_size) * args.n_epochs
+                    - ((_ + 1) + epoch * (len(pairs) // batch_size))
+                )
             )
             expected_time_str = helpers.format_time(expected_time_sec)
             print(
