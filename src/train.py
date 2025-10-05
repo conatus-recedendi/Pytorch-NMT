@@ -169,12 +169,25 @@ def calculate_perplexity(
             )
             target_flat = target_batch.view(-1)
             # target_di shape: [batch_size] when squeezed
-            loss = criterion(decoder_outputs_flat, target_flat)
-            valid_tokens = (target_flat != 2).sum().item()  # PAD token = 2
+            ignore_idxs = {0, 1, 2, 3}
+
+            # 유효 위치 마스크 만들기
+            mask = ~torch.isin(
+                target_flat, torch.tensor(list(ignore_idxs), device=target_flat.device)
+            )
+
+            # Loss 계산
+            loss = F.nll_loss(decoder_outputs_flat, target_flat, reduction="none")
+            loss = (loss * mask).sum() / mask.sum()
+
+            # loss = criterion(decoder_outputs_flat, target_flat)
+            # valid_tokens = (
+            #     (target_flat != 0).sum().item()
+            # )  # ignore all PAD token = 0,  1, 2, 3,
             # loss = loss / valid_tokens if valid_tokens > 0 else loss
 
             total_loss += loss
-            total_tokens += valid_tokens
+            total_tokens += 1
 
     # 원래 training 상태로 복원
     if encoder_was_training:
