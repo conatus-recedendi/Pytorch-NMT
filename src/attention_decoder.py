@@ -31,7 +31,7 @@ class AttentionDecoderRNN(nn.Module):
         # Define layers
         self.embedding = nn.Embedding(tgt_vocab_size, embedding_size)
         self.dropout = nn.Dropout(dropout)
-        self.gru = nn.GRU(
+        self.lstm = nn.LSTM(
             hidden_size + embedding_size, hidden_size, n_layers, dropout=dropout
         )
         self.out = nn.Linear(hidden_size * 2, tgt_vocab_size)
@@ -85,7 +85,7 @@ class AttentionDecoderRNN(nn.Module):
         rnn_input = torch.cat(
             (embedded, decoder_context), 2
         )  # [1, -1, embedding_size + hidden_size]
-        rnn_output, hidden_state = self.gru(
+        rnn_output, hidden_state = self.lstm(
             rnn_input, hidden_state
         )  # [1, -1, hidden_size]
 
