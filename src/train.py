@@ -178,7 +178,7 @@ def calculate_perplexity(
 
             # Loss 계산
             loss = F.nll_loss(decoder_outputs_flat, target_flat, reduction="none")
-            loss = (loss * mask).sum() / mask.sum()
+            loss = (loss * mask).sum()
 
             # loss = criterion(decoder_outputs_flat, target_flat)
             # valid_tokens = (
@@ -187,7 +187,7 @@ def calculate_perplexity(
             # loss = loss / valid_tokens if valid_tokens > 0 else loss
 
             total_loss += loss
-            total_tokens += 1
+            total_tokens += mask.sum()
 
     # 원래 training 상태로 복원
     if encoder_was_training:
