@@ -169,7 +169,7 @@ def calculate_perplexity(
             )
             target_flat = target_batch.view(-1)
             # target_di shape: [batch_size] when squeezed
-            ignore_idxs = {0, 1, 2, 3}
+            ignore_idxs = {0, 1, 2}
 
             # 유효 위치 마스크 만들기
             mask = ~torch.isin(
