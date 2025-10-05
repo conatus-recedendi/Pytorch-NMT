@@ -69,11 +69,9 @@ id = "attn=%s,local=%s,dropout=d%.2f" % (
     args.dropout,
 )
 # Load model parameters
-encoder.load_state_dict(torch.load("./data/encoder_params_{}".format(args.language)))
-decoder.load_state_dict(torch.load("./data/decoder_params_{}".format(args.language)))
-decoder.attention.load_state_dict(
-    torch.load("./data/attention_params_{}".format(args.language))
-)
+encoder.load_state_dict(torch.load("./data/encoder_model_{}".format(id)))
+decoder.load_state_dict(torch.load("./data/decoder_model_{}".format(id)))
+decoder.attention.load_state_dict(torch.load("./data/attention_model_{}".format(id)))
 
 # Move models to device
 encoder = encoder.to(device)
