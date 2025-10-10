@@ -30,6 +30,8 @@ def prepare_data(lang_name, is_test=False):
     pairs = filter_pairs(pairs)
 
     for pair in pairs:
+        if len(pair[0]) < 1:
+            continue
         input_lang.index_words(pair[0])
         output_lang.index_words(pair[1])
 
