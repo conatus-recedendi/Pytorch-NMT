@@ -26,6 +26,8 @@ def build_vocab(file_path, vocab_size=50000):
             # counter.update(line.strip().split(b" "))
 
     most_common = [w for w, _ in counter.most_common(vocab_size)]
+    most_common.sort()
+    print(most_common)
     return set(most_common)
 
 

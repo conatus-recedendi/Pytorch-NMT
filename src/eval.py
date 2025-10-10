@@ -222,10 +222,6 @@ def greedy_decode(decoder_context, decoder_hidden, encoder_outputs, max_len):
 
         # Choose top word from output
         topv, topi = decoder_output.data.topk(1, dim=1)
-        if di < 5:
-            # print(decoder_output.data.topk(10))
-            print(topi)
-            print(output_lang.n_words)
         ni = topi.item()
         if ni == Language.eos_token:
             decoded_words.append("<EOS>")
