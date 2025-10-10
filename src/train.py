@@ -18,7 +18,7 @@ import torch.nn.functional as F
 import numpy as np
 
 
-def pad_sequences_pre(sequences, maxlen, pad_value=0):
+def pad_sequences_pre(sequences, maxlen, padding_value=0):
     """
     pad_sequences와 동일하지만 앞쪽(pre)에 padding을 붙입니다.
     """
@@ -28,7 +28,7 @@ def pad_sequences_pre(sequences, maxlen, pad_value=0):
         if len(seq) < maxlen:
             pad_width = maxlen - len(seq)
             padded_seq = np.pad(
-                seq, (pad_width, 0), mode="constant", constant_values=pad_value
+                seq, (pad_width, 0), mode="constant", constant_values=padding_value
             )
         else:
             padded_seq = seq[-maxlen:]  # 길이 초과 시 뒤쪽 자름
