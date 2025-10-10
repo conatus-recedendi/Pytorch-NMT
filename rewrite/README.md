@@ -33,6 +33,9 @@ python filter_long_sen.py --train_en "test.14.50k.en" --train_de "test.14.50k.de
 
 - train.sh
 - train.py (dropout )
+- reverse 시 수정
+- dropout 시 파라미터 수정
+-
 
 ```
 perl multi-bleu.perl test.14.de < test.14.hypothesis.de

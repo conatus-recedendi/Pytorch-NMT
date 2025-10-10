@@ -41,7 +41,11 @@ def replace_with_unk(file_path, vocab, out_path):
             # remove empty token bcz it is biniary
             # line = re.sub(r"^\s+|\s+$", r"", line)
             tokens = line.strip().split(b" ")
-            tokens = [tok for tok in tokens if tok and tok.strip()]
+            tokens = [
+                tok
+                for tok in tokens
+                if tok and tok.strip() and tok != b"" and tok != b" "
+            ]
 
             new_tokens = [tok if tok in vocab else b"<UNK>" for tok in tokens]
             # print(new_tokens)
