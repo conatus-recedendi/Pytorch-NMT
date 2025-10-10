@@ -31,6 +31,9 @@ parser.add_argument("--batch_size", type=int)
 parser.add_argument("--device", type=str, help="cpu or cuda")
 parser.add_argument("--seed", type=str, help="random seed")
 parser.add_argument("--local", type=str, help="local-m, local-p, None", default=None)
+parser.add_argument(
+    "--input_ref_file", type=str, help="input reference file path with target sentences"
+)
 args = parser.parse_args()
 helpers.validate_language_params(args.language)
 
