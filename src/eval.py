@@ -151,6 +151,7 @@ def evaluate_file(input_file_path, output_file_path=None, max_len=10):
     # Process each sentence
     for sentence in sentences:
         normalized_sentence = helpers.normalize_string(sentence)
+        evaluate_sentence = [sentence]
         beam_translation, greedy_translation = evaluate_sentence(
             normalized_sentence, max_len
         )
