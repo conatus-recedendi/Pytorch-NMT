@@ -22,7 +22,7 @@ def unicode_to_ascii(s):
 def normalize_string(s):
     s = s.lower().strip()
     # <unk> 은 보존
-    s = re.sub(rb"([.!?])", rb" \1", s)
+    s = re.sub(rb"([.!?])", rb" \1", s)  # 구두점 앞에 공백 추가
     s = re.sub(rb"[^a-zA-Z.!?,()\s]+", rb"", s)  # 영문자, 구두점, 공백 외 제거
     s = re.sub(rb"\s{2,}", rb" ", s)  # 여러 공백 -> 하나의 공백
     return s
@@ -66,11 +66,10 @@ def replace_with_unk(file_path, vocab, out_path):
             # line = re.sub(r"\s{2,}", r" ", line)
             # remove empty token bcz it is biniary
             # line = re.sub(r"^\s+|\s+$", r"", line)
+
             tokens = line.strip().split(b" ")
             tokens = [
-                tok
-                for tok in tokens
-                if tok and tok.strip() and tok != b"" and tok != b" "
+                normalize_string(tok).strip() for tok in tokens if tok and tok.strip()
             ]
 
             new_tokens = [tok if tok in vocab else b"<unk>" for tok in tokens]
