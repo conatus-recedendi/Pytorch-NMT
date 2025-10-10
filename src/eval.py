@@ -190,11 +190,11 @@ def evaluate_file(input_file_path, input_ref_path, output_file_path=None, max_le
         # print(beam_translation)
 
         results.append({"source": sentence, "greedy": greedy_translation})
-        print(f"{idx}")
-        print(f"src: {sentence}")
-        print(f"best: {ref_sentences[idx]}")
-        print(f"base: {greedy_translation}")
-        print("==============================")
+        print(f"{idx}/{len(sentences)}")
+        # print(f"src: {sentence}")
+        # print(f"best: {ref_sentences[idx]}")
+        # print(f"base: {greedy_translation}")
+        # print("==============================")
         idx += 1
 
     # Save results to output file if specified
