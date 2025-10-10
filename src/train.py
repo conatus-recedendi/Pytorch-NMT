@@ -140,8 +140,8 @@ def calculate_perplexity(
                 output_lang,
                 device,
             )
-            input_batch = torch.tensor(evaluation_pair_batch[0])
-            target_batch = torch.tensor(evaluation_pair_batch[1])
+            input_batch = torch.stack(evaluation_pair_batch[0])
+            target_batch = torch.stack(evaluation_pair_batch[1])
 
             actual_batch_size = input_batch.size(0)
             target_length = batch_targets.size(1)
@@ -479,8 +479,8 @@ for epoch in range(1, args.n_epochs + 1):
         training_pair_batch = etl.tensor_from_pair_batch(
             pair_batch, input_lang, output_lang, device
         )
-        input = torch.tensor(training_pair_batch[0])
-        target = torch.tensor(training_pair_batch[1])
+        input = torch.stack(training_pair_batch[0])
+        target = torch.stack(training_pair_batch[1])
 
         # input = pad_sequences_pre(input, maxlen=50, padding_value=2)  # PAD token
         # target = pad_sequence(target, batch_first=True, padding_value=2)  # PAD token
