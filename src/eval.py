@@ -94,6 +94,7 @@ def evaluate_sentence(sentence, max_len=10):
     input_length = input.size()[0]
 
     # Run through encoder
+    input = input.view(1, -1)  # [seq_len, 1]
     encoder_hidden = encoder.init_hidden(device)
     encoder_outputs, encoder_hidden = encoder(input, encoder_hidden)
 
@@ -151,7 +152,7 @@ def evaluate_file(input_file_path, output_file_path=None, max_len=10):
     # Process each sentence
     for sentence in sentences:
         normalized_sentence = helpers.normalize_string(sentence)
-        normalized_sentence = [normalized_sentence]
+        # normalized_sentence = [normalized_sentence]
         beam_translation, greedy_translation = evaluate_sentence(
             normalized_sentence, max_len
         )
