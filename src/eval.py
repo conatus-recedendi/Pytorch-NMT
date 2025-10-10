@@ -52,6 +52,17 @@ encoder = EncoderRNN(
     args.dropout,
 )
 
+print(
+    "encoder: n_words=%d, embedding_size=%d, hidden_size=%d, n_layers=%d, dropout=%.2f"
+    % (
+        input_lang.n_words,
+        args.embedding_size,
+        args.hidden_size,
+        args.n_layers,
+        args.dropout,
+    )
+)
+
 decoder = AttentionDecoderRNN(
     args.batch_size,
     output_lang.n_words,
