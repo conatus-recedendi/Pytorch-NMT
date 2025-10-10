@@ -381,12 +381,26 @@ class TopKDecode(torch.nn.Module):
             step.index_select(0, re_sorted_idx).view(batch_size, self.beam_size, -1)
             for step in reversed(topk_sequence)
         ]
-        h_t = [
-            step.index_select(1, re_sorted_idx).view(
-                -1, batch_size, self.beam_size, self.hidden_size
-            )
-            for step in reversed(h_t)
-        ]
+        # Handle LSTM case for h_t processing
+        h_t_processed = []
+        for step in reversed(h_t):
+            if isinstance(step, tuple):
+                # LSTM case: step = (hidden_state, cell_state)
+                hidden_state, cell_state = step
+                hidden_state = hidden_state.index_select(1, re_sorted_idx).view(
+                    -1, batch_size, self.beam_size, self.hidden_size
+                )
+                cell_state = cell_state.index_select(1, re_sorted_idx).view(
+                    -1, batch_size, self.beam_size, self.hidden_size
+                )
+                h_t_processed.append((hidden_state, cell_state))
+            else:
+                # GRU case: step is a single tensor
+                processed_step = step.index_select(1, re_sorted_idx).view(
+                    -1, batch_size, self.beam_size, self.hidden_size
+                )
+                h_t_processed.append(processed_step)
+        h_t = h_t_processed
 
         # Handle LSTM case for final h_n processing
         if isinstance(h_n, tuple):
