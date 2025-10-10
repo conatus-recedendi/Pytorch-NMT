@@ -5,6 +5,7 @@ import torch.nn as nn
 from torch.nn.utils.rnn import pad_sequence
 import argparse
 import re
+import unicodedata
 
 
 # Turns a unicode string to plain ASCII (http://stackoverflow.com/a/518232/2809427)
