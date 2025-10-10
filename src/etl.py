@@ -20,10 +20,10 @@ def filter_pairs(pairs):
     return [pair for pair in pairs if filter_pair(pair)]
 
 
-def prepare_data(lang_name):
+def prepare_data(lang_name, is_test=False):
 
     # Read and filter sentences
-    input_lang, output_lang, pairs = read_languages(lang_name)
+    input_lang, output_lang, pairs = read_languages(lang_name, is_test)
     pairs = filter_pairs(pairs)
 
     # Index words
@@ -34,14 +34,21 @@ def prepare_data(lang_name):
     return input_lang, output_lang, pairs
 
 
-def read_languages(lang):
+def read_languages(lang, is_test=False):
 
-    # Read and parse the text file
-    doc = open("./rewrite/train.len50.%s" % lang, "rb")
+    # Read and parse the text file``
+    if is_test:
+        doc = open("./rewrite/test.14.%s" % lang, "rb")
+    else:
+        doc = open("./rewrite/train.len50.%s" % lang, "rb")
     lines = doc.read().strip().split(b"\n")
     lines = [l.decode("utf-8", errors="strict") for l in lines]
 
-    doc_en = open("./rewrite/train.len50.en", "rb")
+    # For training data, use the corresponding English file as source
+    if is_test:
+        doc_en = open("./rewrite/test.14.en", "rb")
+    else:
+        doc_en = open("./rewrite/train.len50.en", "rb")
     lines_en = doc_en.read().strip().split(b"\n")
     lines_en = [l.decode("utf-8", errors="strict") for l in lines_en]
     print("loaded")

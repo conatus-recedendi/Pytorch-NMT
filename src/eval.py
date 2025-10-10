@@ -34,7 +34,7 @@ parser.add_argument("--local", type=str, help="local-m, local-p, None", default=
 args = parser.parse_args()
 helpers.validate_language_params(args.language)
 
-input_lang, output_lang, pairs = etl.prepare_data(args.language)
+input_lang, output_lang, pairs = etl.prepare_data(args.language, is_test=True)
 
 torch.random.manual_seed(args.seed)
 
