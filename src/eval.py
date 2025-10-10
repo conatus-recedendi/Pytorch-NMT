@@ -162,6 +162,7 @@ def evaluate_file(input_file_path, output_file_path=None, max_len=10):
 
         results.append({"source": sentence, "greedy": greedy_translation})
         print(f"{idx}: {sentence} => {greedy_translation}")
+        idx += 1
 
     # Save results to output file if specified
     if output_file_path:
