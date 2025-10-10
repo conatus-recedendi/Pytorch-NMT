@@ -16,6 +16,9 @@ from torch.cuda.amp import autocast, GradScaler
 import torch.nn.functional as F
 
 
+max_len = 50
+
+
 def pad_sequences_pre(sequences, maxlen, padding_value=0):
     """
     pad_sequences와 동일하지만 앞쪽(pre)에 padding을 붙입니다.
@@ -100,25 +103,25 @@ def load_test_data(
             for word in de_sent.split()
         ]
 
-        if len(en_indexes) < args.max_len:
+        if len(en_indexes) < max_len:
             en_indexes = (
-                [Language.pad_token] * (args.max_len - len(en_indexes) - 1)
+                [Language.pad_token] * (max_len - len(en_indexes) - 1)
                 + en_indexes
                 + Language.eos_token
             )
         else:
-            en_indexes = en_indexes[: args.max_len - 1] + [Language.eos_token]
-        if len(de_indexes) < args.max_len:
+            en_indexes = en_indexes[: max_len - 1] + [Language.eos_token]
+        if len(de_indexes) < max_len:
             de_indexes = (
                 de_indexes
                 + Language.eos_token
-                + [Language.pad_token] * (args.max_len - len(de_indexes) - 1)
+                + [Language.pad_token] * (max_len - len(de_indexes) - 1)
             )
         else:
-            de_indexes = de_indexes[: args.max_len - 1] + [Language.eos_token]
+            de_indexes = de_indexes[: max_len - 1] + [Language.eos_token]
 
-        assert len(en_indexes) == args.max_len
-        assert len(de_indexes) == args.max_len
+        assert len(en_indexes) == max_len
+        assert len(de_indexes) == max_len
 
         en_tensor = torch.LongTensor(en_indexes).view(-1, 1).to(device)
         de_tensor = torch.LongTensor(de_indexes).view(-1, 1).to(device)
