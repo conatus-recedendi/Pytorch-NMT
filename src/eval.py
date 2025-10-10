@@ -184,7 +184,7 @@ def evaluate_file(input_file_path, input_ref_path, output_file_path=None, max_le
 
         # normalized_sentence = helpers.normalize_string(sentence)
         # normalized_sentence = [normalized_sentence]
-        greedy_translation = evaluate_sentence(sentences, max_len)
+        greedy_translation = evaluate_sentence(sentence, max_len)
 
         # Use beam translation as default output
         # print(beam_translation)
