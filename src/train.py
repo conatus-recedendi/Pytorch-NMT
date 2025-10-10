@@ -134,8 +134,10 @@ def calculate_perplexity(
         for i in range(0, len(test_inputs), batch_size):
             batch_inputs = test_inputs[i : i + batch_size]
             batch_targets = test_targets[i : i + batch_size]
+            pair_batch = list(zip(batch_inputs, batch_targets))
+            print(type(pair_batch), len(pair_batch), len(pair_batch[0]))
             evaluation_pair_batch = etl.tensor_from_pair_batch(
-                list(zip(batch_inputs, batch_targets)),
+                pair_batch,
                 input_lang,
                 output_lang,
                 device,
@@ -476,6 +478,7 @@ for epoch in range(1, args.n_epochs + 1):
             )
             sys.stdout.flush()
         pair_batch = pairs[_ * batch_size : (_ + 1) * batch_size]
+        print(type(pair_batch), len(pair_batch), len(pair_batch[0]))
         training_pair_batch = etl.tensor_from_pair_batch(
             pair_batch, input_lang, output_lang, device
         )
