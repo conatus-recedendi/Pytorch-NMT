@@ -176,7 +176,7 @@ def evaluate_file(input_file_path, input_ref_path, output_file_path=None, max_le
     if output_file_path:
         with open(output_file_path, "w", encoding="utf-8") as f:
             for result in results:
-                f.write(f"{result['beam']}\n")
+                f.write(f"{result['greedy']}\n")
 
     return results
 
