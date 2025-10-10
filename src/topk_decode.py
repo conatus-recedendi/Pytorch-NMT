@@ -72,7 +72,18 @@ class TopKDecode(torch.nn.Module):
         encoder_outputs = encoder_outputs.repeat(
             1, self.beam_size, 1
         )  # [max_len, batch_size * beam_size, hidden_size]
-        decoder_hidden = decoder_hidden.repeat(1, self.beam_size, 1)
+
+        # Handle LSTM case where decoder_hidden is a tuple (hidden_state, cell_state)
+        if isinstance(decoder_hidden, tuple):
+            # LSTM case: decoder_hidden = (hidden_state, cell_state)
+            hidden_state, cell_state = decoder_hidden
+            hidden_state = hidden_state.repeat(1, self.beam_size, 1)
+            cell_state = cell_state.repeat(1, self.beam_size, 1)
+            decoder_hidden = (hidden_state, cell_state)
+        else:
+            # GRU case: decoder_hidden is a single tensor
+            decoder_hidden = decoder_hidden.repeat(1, self.beam_size, 1)
+
         decoder_context = decoder_context.repeat(
             1, self.beam_size, 1
         )  # [num_layer, batch_size * beam_size, hidden_size]
@@ -130,7 +141,18 @@ class TopKDecode(torch.nn.Module):
             predecessors = (
                 candidates / self.vocab_size + self.pos_index.expand_as(candidates)
             ).view(batch_size * self.beam_size, 1)
-            decoder_hidden = decoder_hidden.index_select(1, predecessors.squeeze())
+
+            # Handle LSTM case for hidden state selection
+            if isinstance(decoder_hidden, tuple):
+                # LSTM case: decoder_hidden = (hidden_state, cell_state)
+                hidden_state, cell_state = decoder_hidden
+                hidden_state = hidden_state.index_select(1, predecessors.squeeze())
+                cell_state = cell_state.index_select(1, predecessors.squeeze())
+                decoder_hidden = (hidden_state, cell_state)
+            else:
+                # GRU case: decoder_hidden is a single tensor
+                decoder_hidden = decoder_hidden.index_select(1, predecessors.squeeze())
+
             decoder_context = decoder_context.index_select(1, predecessors.squeeze())
 
             # Update sequence scores and erase scores for end-of-sentence symbol so that they aren't expanded
@@ -158,7 +180,15 @@ class TopKDecode(torch.nn.Module):
         #  print(output)
         # Build return objects
         decoder_outputs = [step[:, 0, :] for step in output]
-        decoder_hidden = h_n[:, :, 0, :]
+
+        # Handle LSTM case for final hidden state extraction
+        if isinstance(h_n, tuple):
+            # LSTM case: extract hidden state from tuple
+            hidden_state, cell_state = h_n
+            decoder_hidden = (hidden_state[:, :, 0, :], cell_state[:, :, 0, :])
+        else:
+            # GRU case: extract from single tensor
+            decoder_hidden = h_n[:, :, 0, :]
         #  print(h_t)
         #  print(topk_length)
         #  for item in topk_sequence:
@@ -205,7 +235,13 @@ class TopKDecode(torch.nn.Module):
         # If a (top-beam_size) sequence ends early in decoding, `h_n` contains
         # its decoder_hidden state when it sees eos_id.  Otherwise, `h_n` contains
         # the last decoder_hidden state of decoding.
-        h_n = torch.zeros(nw_hidden[0].size())
+        if isinstance(nw_hidden[0], tuple):
+            # LSTM case: initialize tuple of zeros
+            hidden_state, cell_state = nw_hidden[0]
+            h_n = (torch.zeros(hidden_state.size()), torch.zeros(cell_state.size()))
+        else:
+            # GRU case: initialize single tensor of zeros
+            h_n = torch.zeros(nw_hidden[0].size())
         topk_length = [
             [max_len] * self.beam_size for _ in range(batch_size)
         ]  # Placeholder for lengths of top-beam_size sequences
@@ -231,7 +267,18 @@ class TopKDecode(torch.nn.Module):
         while t >= 0:
             # Re-order the variables with the back pointer
             current_output = nw_output[t].index_select(0, t_predecessors)
-            current_hidden = nw_hidden[t].index_select(1, t_predecessors)
+
+            # Handle LSTM case for hidden state backtracking
+            if isinstance(nw_hidden[t], tuple):
+                # LSTM case: nw_hidden[t] = (hidden_state, cell_state)
+                hidden_state, cell_state = nw_hidden[t]
+                hidden_state = hidden_state.index_select(1, t_predecessors)
+                cell_state = cell_state.index_select(1, t_predecessors)
+                current_hidden = (hidden_state, cell_state)
+            else:
+                # GRU case: nw_hidden[t] is a single tensor
+                current_hidden = nw_hidden[t].index_select(1, t_predecessors)
+
             current_symbol = symbols[t].index_select(0, t_predecessors)
             # Re-order the back pointer of the previous step with the back pointer of
             # the current step
@@ -274,8 +321,25 @@ class TopKDecode(torch.nn.Module):
                     # with the new ended sequence information
                     t_predecessors[res_idx] = predecessors[t][idx[0]]
                     current_output[res_idx, :] = nw_output[t][idx[0], :]
-                    current_hidden[:, res_idx, :] = nw_hidden[t][:, idx[0], :]
-                    h_n[:, res_idx, :] = nw_hidden[t][:, idx[0], :].data
+
+                    # Handle LSTM case for hidden state assignment
+                    if isinstance(current_hidden, tuple):
+                        # LSTM case: assign both hidden and cell states
+                        current_hidden_state, current_cell_state = current_hidden
+                        nw_hidden_state, nw_cell_state = nw_hidden[t]
+                        h_n_state, h_n_cell = h_n
+
+                        current_hidden_state[:, res_idx, :] = nw_hidden_state[
+                            :, idx[0], :
+                        ]
+                        current_cell_state[:, res_idx, :] = nw_cell_state[:, idx[0], :]
+                        h_n_state[:, res_idx, :] = nw_hidden_state[:, idx[0], :].data
+                        h_n_cell[:, res_idx, :] = nw_cell_state[:, idx[0], :].data
+                    else:
+                        # GRU case: assign single hidden state
+                        current_hidden[:, res_idx, :] = nw_hidden[t][:, idx[0], :]
+                        h_n[:, res_idx, :] = nw_hidden[t][:, idx[0], :].data
+
                     current_symbol[res_idx, :] = symbols[t][idx[0]]
                     score[b_idx, res_k_idx] = scores[t][idx[0]].data[0]
                     topk_length[b_idx][res_k_idx] = t + 1
