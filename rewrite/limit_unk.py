@@ -20,11 +20,11 @@ def unicode_to_ascii(s):
 
 
 def normalize_string(s):
-    s = unicode_to_ascii(s.lower().strip())
+    s = s.lower().strip()
     # <unk> 은 보존
-    s = re.sub(r"([.!?])", r" \1", s)
-    s = re.sub(r"[^a-zA-Z.!?,()\s]+", r"", s)  # 영문자, 구두점, 공백 외 제거
-    s = re.sub(r"\s{2,}", r" ", s)  # 여러 공백 -> 하나의 공백
+    s = re.sub(rb"([.!?])", rb" \1", s)
+    s = re.sub(rb"[^a-zA-Z.!?,()\s]+", rb"", s)  # 영문자, 구두점, 공백 외 제거
+    s = re.sub(rb"\s{2,}", rb" ", s)  # 여러 공백 -> 하나의 공백
     return s
 
 
