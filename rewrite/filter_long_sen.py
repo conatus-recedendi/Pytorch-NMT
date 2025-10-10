@@ -25,6 +25,7 @@ def normalize_string(s):
     s = re.sub(r"[^a-zA-Z.!?,()\s]+", r"", s)  # 영문자, 구두점, 공백 외 제거
     # s = re.sub(r"TEMPUNKTOKEN", "<UNK>", s)  # 임시 토큰을 <unk>로 복원
     s = re.sub(r"TEMPUNKTOKEN", "<UNK>", s)  # 임시 토큰을 <unk>로 복원
+    s = re.sub(r"\s{2,}", r" ", s)  # 여러 공백 -> 하나의 공백
     return s
 
 
