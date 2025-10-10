@@ -114,11 +114,12 @@ decoder = decoder.to(device)
 
 def evaluate_sentence(sentence, max_len=10):
     input = etl.tensor_from_sentence(input_lang, sentence, device)
+
     input_length = input.size()[0]
 
     # Run through encoder
     input = input.view(1, -1)  # [seq_len, 1]
-    input = pad_sequences_pre(input, maxlen=50, padding_value=2)  # PAD token
+    # input = pad_sequences_pre(input, maxlen=50, padding_value=2)  # PAD token
     encoder_hidden = encoder.init_hidden(device)
     encoder_outputs, encoder_hidden = encoder(input, encoder_hidden)
 
@@ -174,7 +175,9 @@ def evaluate_file(input_file_path, input_ref_path, output_file_path=None, max_le
         sentences = [line.strip() for line in f if line.strip()]
     with open(input_ref_path, "r", encoding="utf-8") as f:
         ref_sentences = [line.strip() for line in f if line.strip()]
+
     # Process each sentence
+
     idx = 0
     for sentence in sentences:
 
@@ -207,7 +210,6 @@ def greedy_decode(decoder_context, decoder_hidden, encoder_outputs, max_len):
     decoded_words = []
     encoder_len = encoder_outputs.size(0)
     decoder_attentions = torch.zeros(max_len, encoder_len)
-    decoder_input = torch.LongTensor([[Language.eos_token]]).to(device)  # SOS
     for di in range(max_len):
         decoder_output, decoder_context, decoder_hidden, decoder_attention = decoder(
             decoder_input, decoder_context, decoder_hidden, encoder_outputs

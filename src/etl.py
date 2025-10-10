@@ -77,10 +77,30 @@ def indexes_from_sentence(lang, sentence):
     return [lang.get_index_word(word) for word in sentence.split(" ")]
 
 
-def tensor_from_sentence(lang, sentence, device="cpu"):
+def tensor_from_sentence(lang, sentence, device="cpu", is_src=True):
     # print(sentence)
+
+    max_len = 50
     indexes = indexes_from_sentence(lang, sentence)
-    indexes.append(Language.eos_token)
+
+    if is_src:
+        if len(indexes) < max_len:
+            indexes = (
+                [Language.pad_token] * (max_len - len(indexes) - 1)
+                + indexes
+                + [Language.eos_token]
+            )
+        else:
+            indexes = indexes[: max_len - 1] + [Language.eos_token]
+    else:
+        if len(indexes) < max_len:
+            indexes = (
+                indexes
+                + [Language.eos_token]
+                + [Language.pad_token] * (max_length - len(indexes) - 1)
+            )
+        else:
+            indexes = indexes[: max_length - 1] + [Language.eos_token]
     tensor = torch.LongTensor(indexes).view(-1, 1).to(device)
     return tensor
 
