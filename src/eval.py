@@ -103,34 +103,34 @@ def evaluate_sentence(sentence, max_len=10):
 
     decoder_hidden = encoder_hidden
 
-    topk_decoder = TopKDecode(
-        decoder,
-        decoder.hidden_size,
-        args.beam_size,
-        output_lang.n_words,
-        Language.sos_token,
-        Language.eos_token,
-        device,
-    )
-    topk_decoder = topk_decoder.to(device)
+    # topk_decoder = TopKDecode(
+    #     decoder,
+    #     decoder.hidden_size,
+    #     args.beam_size,
+    #     output_lang.n_words,
+    #     Language.sos_token,
+    #     Language.eos_token,
+    #     device,
+    # )
+    # topk_decoder = topk_decoder.to(device)
 
-    decoder_outputs, _, metadata = topk_decoder(
-        decoder_context,
-        decoder_hidden,
-        encoder_outputs,
-        args.max_len,
-        args.batch_size,
-    )
+    # decoder_outputs, _, metadata = topk_decoder(
+    #     decoder_context,
+    #     decoder_hidden,
+    #     encoder_outputs,
+    #     args.max_len,
+    #     args.batch_size,
+    # )
 
-    beam_words = torch.stack(metadata["topk_sequence"], dim=0)
-    #  print(beam_words.shape)
-    beam_words = beam_words.squeeze(3).squeeze(1).transpose(0, 1)
-    beam_length = metadata["topk_length"]
+    # beam_words = torch.stack(metadata["topk_sequence"], dim=0)
+    # #  print(beam_words.shape)
+    # beam_words = beam_words.squeeze(3).squeeze(1).transpose(0, 1)
+    # beam_length = metadata["topk_length"]
 
-    # Get best beam translation
-    best_beam_ids = beam_words[0][: beam_length[0][0]]
-    best_beam_words = [output_lang.index2word[id] for id in best_beam_ids.tolist()]
-    best_beam_sentence = assemble_sentence(best_beam_words)
+    # # Get best beam translation
+    # best_beam_ids = beam_words[0][: beam_length[0][0]]
+    # best_beam_words = [output_lang.index2word[id] for id in best_beam_ids.tolist()]
+    # best_beam_sentence = assemble_sentence(best_beam_words)
 
     # Also get greedy translation for comparison
     greedy_words, greedy_attention = greedy_decode(
@@ -138,7 +138,7 @@ def evaluate_sentence(sentence, max_len=10):
     )
     greedy_sentence = assemble_sentence(greedy_words)
 
-    return best_beam_sentence, greedy_sentence
+    return greedy_sentence
 
 
 def evaluate_file(input_file_path, output_file_path=None, max_len=10):
@@ -153,16 +153,12 @@ def evaluate_file(input_file_path, output_file_path=None, max_len=10):
     for sentence in sentences:
         normalized_sentence = helpers.normalize_string(sentence)
         # normalized_sentence = [normalized_sentence]
-        beam_translation, greedy_translation = evaluate_sentence(
-            normalized_sentence, max_len
-        )
+        greedy_translation = evaluate_sentence(normalized_sentence, max_len)
 
         # Use beam translation as default output
         print(beam_translation)
 
-        results.append(
-            {"source": sentence, "beam": beam_translation, "greedy": greedy_translation}
-        )
+        results.append({"source": sentence, "greedy": greedy_translation})
 
     # Save results to output file if specified
     if output_file_path:
