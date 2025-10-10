@@ -83,7 +83,6 @@ def tensor_from_sentence(lang, sentence, device="cpu", is_src=True):
     # print(sentence)
 
     max_len = 50
-    print(type(sentence), len(sentence), sentence)
     indexes = indexes_from_sentence(lang, sentence)
 
     if is_src:
