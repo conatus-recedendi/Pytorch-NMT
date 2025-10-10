@@ -353,7 +353,7 @@ def train(
 
 input_lang, output_lang, pairs = etl.prepare_data(args.language)
 
-print(input_lang)
+print(input_lang.n_words, output_lang.n_words, len(pairs))
 # Initialize models
 encoder = EncoderRNN(
     args.batch_size,  # max batch size for init_hidden
