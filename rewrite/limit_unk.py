@@ -47,7 +47,7 @@ def replace_with_unk(file_path, vocab, out_path):
                 if tok and tok.strip() and tok != b"" and tok != b" "
             ]
 
-            new_tokens = [tok if tok in vocab else b"<UNK>" for tok in tokens]
+            new_tokens = [tok if tok in vocab else b"<unk>" for tok in tokens]
             # print(new_tokens)
 
             fout.write(b" ".join(new_tokens) + b"\n")
