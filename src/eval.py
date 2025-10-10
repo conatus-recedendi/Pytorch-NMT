@@ -156,7 +156,7 @@ def evaluate_file(input_file_path, output_file_path=None, max_len=10):
         greedy_translation = evaluate_sentence(normalized_sentence, max_len)
 
         # Use beam translation as default output
-        print(beam_translation)
+        # print(beam_translation)
 
         results.append({"source": sentence, "greedy": greedy_translation})
 
