@@ -23,3 +23,9 @@ class Language:
             self.n_words += 1
         else:
             self.word2count[word] += 1
+
+    def get_index_word(self, word):
+        if word in self.word2index:
+            return self.word2index[word]
+        else:
+            return 3  # unk_token

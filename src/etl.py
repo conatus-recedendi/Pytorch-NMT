@@ -74,7 +74,7 @@ Data Transformation
 
 # Returns a list of indexes, one for each word in the sentence
 def indexes_from_sentence(lang, sentence):
-    return [lang.word2index[word] for word in sentence.split(" ")]
+    return [lang.get_index_word(word) for word in sentence.split(" ")]
 
 
 def tensor_from_sentence(lang, sentence, device="cpu"):
