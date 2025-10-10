@@ -7,6 +7,26 @@ import argparse
 import re
 
 
+# Turns a unicode string to plain ASCII (http://stackoverflow.com/a/518232/2809427)
+def unicode_to_ascii(s):
+    chars = [
+        c
+        for c in unicodedata.normalize("NFD", s)
+        if unicodedata.category(c) != "Mn" or c == "<" or c == ">"
+    ]
+    char_list = "".join(chars)
+    return char_list
+
+
+def normalize_string(s):
+    s = unicode_to_ascii(s.lower().strip())
+    # <unk> 은 보존
+    s = re.sub(r"([.!?])", r" \1", s)
+    s = re.sub(r"[^a-zA-Z.!?,()\s]+", r"", s)  # 영문자, 구두점, 공백 외 제거
+    s = re.sub(r"\s{2,}", r" ", s)  # 여러 공백 -> 하나의 공백
+    return s
+
+
 def build_vocab(file_path, vocab_size=50000):
     """주어진 파일에서 상위 vocab_size 단어의 집합을 리턴"""
     counter = collections.Counter()
@@ -20,8 +40,11 @@ def build_vocab(file_path, vocab_size=50000):
         for line in data.split(b"\n"):
             idx += 1
             tokens = line.strip().split(b" ")
+            tokens = [
+                normalize_string(tok).strip() for tok in tokens if tok and tok.strip()
+            ]
             # 빈 토큰과 공백만 있는 토큰 제거
-            tokens = [tok for tok in tokens if tok and tok.strip()]
+            # tokens = [tok for tok in tokens if tok and tok.strip()]
             counter.update(tokens)
             # counter.update(line.strip().split(b" "))
 
