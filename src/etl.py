@@ -29,6 +29,10 @@ def prepare_data(lang_name, is_test=False):
     # pairs_test = filter_pairs(pairs)
     pairs = filter_pairs(pairs)
 
+    for pair in pairs:
+        input_lang.index_words(pair[0])
+        output_lang.index_words(pair[1])
+
     return input_lang, output_lang, pairs
 
 
