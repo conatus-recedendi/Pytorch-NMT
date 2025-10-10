@@ -7,6 +7,25 @@ from topk_decode import TopKDecode
 from encoder import EncoderRNN
 from language import Language
 from beam import Beam
+import numpy as np
+
+
+def pad_sequences_pre(sequences, maxlen, pad_value=0):
+    """
+    pad_sequences와 동일하지만 앞쪽(pre)에 padding을 붙입니다.
+    """
+    padded = []
+    for seq in sequences:
+        seq = np.array(seq)
+        if len(seq) < maxlen:
+            pad_width = maxlen - len(seq)
+            padded_seq = np.pad(
+                seq, (pad_width, 0), mode="constant", constant_values=pad_value
+            )
+        else:
+            padded_seq = seq[-maxlen:]  # 길이 초과 시 뒤쪽 자름
+        padded.append(padded_seq)
+    return np.array(padded)
 
 
 # Parse argument for input sentence
@@ -98,6 +117,7 @@ def evaluate_sentence(sentence, max_len=10):
 
     # Run through encoder
     input = input.view(1, -1)  # [seq_len, 1]
+    input = pad_sequences_pre(input, maxlen=50, padding_value=2)  # PAD token
     encoder_hidden = encoder.init_hidden(device)
     encoder_outputs, encoder_hidden = encoder(input, encoder_hidden)
 
