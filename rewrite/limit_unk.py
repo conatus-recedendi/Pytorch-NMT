@@ -14,13 +14,16 @@ def build_vocab(file_path, vocab_size=50000):
         data = (
             f.read().decode("utf-8", errors="strict").encode("utf-8", errors="strict")
         )
+
         # print(data[:100])
         idx = 0
         for line in data.split(b"\n"):
             idx += 1
-            # if idx < 100:
-            #     print(line.strip().split(b" "))
-            counter.update(line.strip().split(b" "))
+            tokens = line.strip().split(b" ")
+            # 빈 토큰과 공백만 있는 토큰 제거
+            tokens = [tok for tok in tokens if tok and tok.strip()]
+            counter.update(tokens)
+            # counter.update(line.strip().split(b" "))
 
     most_common = [w for w, _ in counter.most_common(vocab_size)]
     return set(most_common)
@@ -34,9 +37,12 @@ def replace_with_unk(file_path, vocab, out_path):
         )
         for line in data.split(b"\n"):
 
-            line = re.sub(r"\s{2,}", r" ", line)
+            # line = re.sub(r"\s{2,}", r" ", line)
+            # remove empty token bcz it is biniary
+            # line = re.sub(r"^\s+|\s+$", r"", line)
             tokens = line.strip().split(b" ")
-            # print(tokens)
+            tokens = [tok for tok in tokens if tok and tok.strip()]
+
             new_tokens = [tok if tok in vocab else b"<UNK>" for tok in tokens]
             # print(new_tokens)
 
