@@ -176,7 +176,8 @@ def evaluate_file(input_file_path, output_file_path=None, max_len=10):
 def greedy_decode(decoder_context, decoder_hidden, encoder_outputs, max_len):
     # Run through decoder
     decoded_words = []
-    decoder_attentions = torch.zeros(max_len, max_len)
+    encoder_len = encoder_outputs.size(0)
+    decoder_attentions = torch.zeros(max_len, encoder_len)
     decoder_input = torch.LongTensor([[Language.sos_token]]).to(device)  # SOS
     for di in range(max_len):
         decoder_output, decoder_context, decoder_hidden, decoder_attention = decoder(
