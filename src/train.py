@@ -516,7 +516,7 @@ for epoch in range(1, args.n_epochs + 1):
         avg_loss = batch_loss
 
         # Calculate perplexity every 100 batches
-        if total_batch_count % 5000 == 0 and test_inputs is not None:
+        if total_batch_count % 1 == 0 and test_inputs is not None:
             print(f"\n\nCalculating perplexity at batch {total_batch_count}...")
             # Simple perplexity calculation using current loss
             # Perplexity = exp(average_loss)
