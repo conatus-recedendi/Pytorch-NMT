@@ -8,6 +8,8 @@ from encoder import EncoderRNN
 from language import Language
 from beam import Beam
 
+# import numpy as np
+
 
 def pad_sequences_pre(sequences, maxlen, padding_value=0):
     """
@@ -116,7 +118,7 @@ def evaluate_sentence(sentence, max_len=10):
     input_length = input.size()[0]
 
     # Run through encoder
-    input = input.view(1, -1)  # [seq_len, 1]
+    input = input.view(1, -1)  # [1, len]
     # input = pad_sequences_pre(input, maxlen=50, padding_value=2)  # PAD token
     encoder_hidden = encoder.init_hidden(device)
     encoder_outputs, encoder_hidden = encoder(input, encoder_hidden)
@@ -219,6 +221,8 @@ def greedy_decode(decoder_context, decoder_hidden, encoder_outputs, max_len):
 
         # Choose top word from output
         topv, topi = decoder_output.data.topk(1)
+        if di < 5:
+            print(decoder_output.data.topk(10))
         ni = topi.item()
         if ni == Language.eos_token:
             decoded_words.append("<EOS>")
