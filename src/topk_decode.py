@@ -146,14 +146,20 @@ class TopKDecode(torch.nn.Module):
             if isinstance(decoder_hidden, tuple):
                 # LSTM case: decoder_hidden = (hidden_state, cell_state)
                 hidden_state, cell_state = decoder_hidden
-                hidden_state = hidden_state.index_select(1, predecessors.squeeze())
-                cell_state = cell_state.index_select(1, predecessors.squeeze())
+                hidden_state = hidden_state.index_select(
+                    1, predecessors.squeeze().long()
+                )
+                cell_state = cell_state.index_select(1, predecessors.squeeze().long())
                 decoder_hidden = (hidden_state, cell_state)
             else:
                 # GRU case: decoder_hidden is a single tensor
-                decoder_hidden = decoder_hidden.index_select(1, predecessors.squeeze())
+                decoder_hidden = decoder_hidden.index_select(
+                    1, predecessors.squeeze().long()
+                )
 
-            decoder_context = decoder_context.index_select(1, predecessors.squeeze())
+            decoder_context = decoder_context.index_select(
+                1, predecessors.squeeze().long()
+            )
 
             # Update sequence scores and erase scores for end-of-sentence symbol so that they aren't expanded
             stored_scores.append(sequence_scores.clone())
@@ -266,23 +272,25 @@ class TopKDecode(torch.nn.Module):
         )
         while t >= 0:
             # Re-order the variables with the back pointer
-            current_output = nw_output[t].index_select(0, t_predecessors)
+            current_output = nw_output[t].index_select(0, t_predecessors.long())
 
             # Handle LSTM case for hidden state backtracking
             if isinstance(nw_hidden[t], tuple):
                 # LSTM case: nw_hidden[t] = (hidden_state, cell_state)
                 hidden_state, cell_state = nw_hidden[t]
-                hidden_state = hidden_state.index_select(1, t_predecessors)
-                cell_state = cell_state.index_select(1, t_predecessors)
+                hidden_state = hidden_state.index_select(1, t_predecessors.long())
+                cell_state = cell_state.index_select(1, t_predecessors.long())
                 current_hidden = (hidden_state, cell_state)
             else:
                 # GRU case: nw_hidden[t] is a single tensor
-                current_hidden = nw_hidden[t].index_select(1, t_predecessors)
+                current_hidden = nw_hidden[t].index_select(1, t_predecessors.long())
 
-            current_symbol = symbols[t].index_select(0, t_predecessors)
+            current_symbol = symbols[t].index_select(0, t_predecessors.long())
             # Re-order the back pointer of the previous step with the back pointer of
             # the current step
-            t_predecessors = predecessors[t].index_select(0, t_predecessors).squeeze()
+            t_predecessors = (
+                predecessors[t].index_select(0, t_predecessors.long()).squeeze()
+            )
 
             # This tricky block handles dropped sequences that see eos_id earlier.
             # The basic idea is summarized below:
@@ -379,9 +387,23 @@ class TopKDecode(torch.nn.Module):
             )
             for step in reversed(h_t)
         ]
-        h_n = h_n.index_select(1, re_sorted_idx.data).view(
-            -1, batch_size, self.beam_size, self.hidden_size
-        )
+
+        # Handle LSTM case for final h_n processing
+        if isinstance(h_n, tuple):
+            # LSTM case: process both hidden and cell states
+            h_n_state, h_n_cell = h_n
+            h_n_state = h_n_state.index_select(1, re_sorted_idx.data.long()).view(
+                -1, batch_size, self.beam_size, self.hidden_size
+            )
+            h_n_cell = h_n_cell.index_select(1, re_sorted_idx.data.long()).view(
+                -1, batch_size, self.beam_size, self.hidden_size
+            )
+            h_n = (h_n_state, h_n_cell)
+        else:
+            # GRU case: process single tensor
+            h_n = h_n.index_select(1, re_sorted_idx.data.long()).view(
+                -1, batch_size, self.beam_size, self.hidden_size
+            )
         score = score.data
 
         return output, h_t, h_n, score, topk_length, topk_sequence
