@@ -11,6 +11,7 @@ https://github.com/IBM/pytorch-seq2seq/blob/master/seq2seq/models/TopKDecoder.py
 import torch
 import torch.nn.functional as F
 
+
 class TopKDecode(torch.nn.Module):
     r"""
     Top-beam_size decoding with beam search.
@@ -37,14 +38,9 @@ class TopKDecode(torch.nn.Module):
           outputs if provided for decoding}.
     """
 
-    def __init__(self,
-                 decoder,
-                 hidden_size,
-                 beam_size,
-                 vocab_size,
-                 sos_id,
-                 eos_id,
-                 device):
+    def __init__(
+        self, decoder, hidden_size, beam_size, vocab_size, sos_id, eos_id, device
+    ):
         super(TopKDecode, self).__init__()
         self.decoder = decoder
         self.beam_size = beam_size
@@ -54,31 +50,47 @@ class TopKDecode(torch.nn.Module):
         self.eos_id = eos_id
         self.device = device
 
-    def forward(self,
-                decoder_context=None,
-                decoder_hidden=None,
-                encoder_outputs=None,
-                max_len=10,
-                batch_size=1):
+    def forward(
+        self,
+        decoder_context=None,
+        decoder_hidden=None,
+        encoder_outputs=None,
+        max_len=10,
+        batch_size=1,
+    ):
 
         # [batch_size * beam_size, 1]
-        self.pos_index = (torch.LongTensor(range(batch_size)) * self.beam_size).view(-1, 1).to(device)
+        self.pos_index = (
+            (torch.LongTensor(range(batch_size)) * self.beam_size)
+            .view(-1, 1)
+            .to(self.device)
+        )
 
         # Inflate the initial decoder_hidden states to be of size: batch_size*beam_size x h
 
         # ... same idea for encoder_outputs and decoder_outputs
-        encoder_outputs = encoder_outputs.repeat(1, self.beam_size, 1) # [max_len, batch_size * beam_size, hidden_size]
+        encoder_outputs = encoder_outputs.repeat(
+            1, self.beam_size, 1
+        )  # [max_len, batch_size * beam_size, hidden_size]
         decoder_hidden = decoder_hidden.repeat(1, self.beam_size, 1)
-        decoder_context = decoder_context.repeat(1, self.beam_size, 1) # [num_layer, batch_size * beam_size, hidden_size]
+        decoder_context = decoder_context.repeat(
+            1, self.beam_size, 1
+        )  # [num_layer, batch_size * beam_size, hidden_size]
 
         # Initialize the scores; for the first step,
         # ignore the inflated copies to avoid duplicate entries in the top beam_size
-        sequence_scores = torch.Tensor(batch_size * self.beam_size, 1).to(device)
-        sequence_scores.fill_(-float('Inf'))
-        sequence_scores.index_fill_(0, torch.LongTensor([i * self.beam_size for i in range(0, batch_size)]), 0.0)
+        sequence_scores = torch.Tensor(batch_size * self.beam_size, 1).to(self.device)
+        sequence_scores.fill_(-float("Inf"))
+        sequence_scores.index_fill_(
+            0, torch.LongTensor([i * self.beam_size for i in range(0, batch_size)]), 0.0
+        )
 
         # Initialize the decoder_input vector
-        decoder_input = torch.LongTensor([[self.sos_id] * batch_size * self.beam_size]).to(device) # [1, beam_size * batch_size]
+        decoder_input = torch.LongTensor(
+            [[self.sos_id] * batch_size * self.beam_size]
+        ).to(
+            self.device
+        )  # [1, beam_size * batch_size]
 
         # Store decisions for backtracking
         stored_outputs = list()
@@ -93,26 +105,31 @@ class TopKDecode(torch.nn.Module):
             #  print(decoder_context.shape)
             #  print(decoder_hidden.shape)
             #  print(encoder_outputs.shape)
-            output, decoder_context, decoder_hidden, _ = self.decoder(decoder_input,
-                                                                decoder_context,
-                                                                decoder_hidden,
-                                                                encoder_outputs)
+            output, decoder_context, decoder_hidden, _ = self.decoder(
+                decoder_input, decoder_context, decoder_hidden, encoder_outputs
+            )
 
             stored_outputs.append(output)
 
             # To get the full sequence scores for the new candidates, add the local
             # scores for t_i to the predecessor scores for t_(i-1)
             sequence_scores = sequence_scores.repeat(1, self.vocab_size)
-            sequence_scores += output # [batch_size * beam_size, vocab_size]
-            scores, candidates = sequence_scores.view(batch_size, -1).topk(self.beam_size, dim=1)
+            sequence_scores += output  # [batch_size * beam_size, vocab_size]
+            scores, candidates = sequence_scores.view(batch_size, -1).topk(
+                self.beam_size, dim=1
+            )
             # [batch_size, beam_size]
 
             # Reshape decoder_input = (bk, 1) and sequence_scores = (bk, 1)
-            decoder_input = (candidates % self.vocab_size).view(batch_size * self.beam_size, 1) # [beam_size * batch_size, 1]
+            decoder_input = (candidates % self.vocab_size).view(
+                batch_size * self.beam_size, 1
+            )  # [beam_size * batch_size, 1]
             sequence_scores = scores.view(batch_size * self.beam_size, 1)
 
             # Update fields for next timestep
-            predecessors = (candidates / self.vocab_size + self.pos_index.expand_as(candidates)).view(batch_size * self.beam_size, 1)
+            predecessors = (
+                candidates / self.vocab_size + self.pos_index.expand_as(candidates)
+            ).view(batch_size * self.beam_size, 1)
             decoder_hidden = decoder_hidden.index_select(1, predecessors.squeeze())
             decoder_context = decoder_context.index_select(1, predecessors.squeeze())
 
@@ -120,7 +137,7 @@ class TopKDecode(torch.nn.Module):
             stored_scores.append(sequence_scores.clone())
             eos_indices = decoder_input.data.eq(self.eos_id)
             if eos_indices.nonzero().dim() > 0:
-                sequence_scores.data.masked_fill_(eos_indices, -float('inf'))
+                sequence_scores.data.masked_fill_(eos_indices, -float("inf"))
 
             # Cache results for backtracking
             stored_predecessors.append(predecessors)
@@ -128,13 +145,15 @@ class TopKDecode(torch.nn.Module):
             stored_hidden.append(decoder_hidden)
 
         # Do backtracking to return the optimal values
-        output, h_t, h_n, score, topk_length, topk_sequence = self._backtrack(stored_outputs,
-                                                    stored_hidden,
-                                                    stored_predecessors,
-                                                    stored_emitted_symbols,
-                                                    stored_scores,
-                                                    batch_size,
-                                                    max_len)
+        output, h_t, h_n, score, topk_length, topk_sequence = self._backtrack(
+            stored_outputs,
+            stored_hidden,
+            stored_predecessors,
+            stored_emitted_symbols,
+            stored_scores,
+            batch_size,
+            max_len,
+        )
 
         #  print(output)
         # Build return objects
@@ -143,20 +162,22 @@ class TopKDecode(torch.nn.Module):
         #  print(h_t)
         #  print(topk_length)
         #  for item in topk_sequence:
-            #  print(item.tolist())
+        #  print(item.tolist())
         #  print(topk_sequence)
 
         metadata = {}
-        metadata['output'] = output
-        metadata['h_t'] = h_t
-        metadata['score'] = score
-        metadata['topk_length'] = topk_length
-        metadata['topk_sequence'] = topk_sequence
-        metadata['length'] = [seq_len[0] for seq_len in topk_length]
-        metadata['sequence'] = [seq[0] for seq in topk_sequence]
+        metadata["output"] = output
+        metadata["h_t"] = h_t
+        metadata["score"] = score
+        metadata["topk_length"] = topk_length
+        metadata["topk_sequence"] = topk_sequence
+        metadata["length"] = [seq_len[0] for seq_len in topk_length]
+        metadata["sequence"] = [seq[0] for seq in topk_sequence]
         return decoder_outputs, decoder_hidden, metadata
 
-    def _backtrack(self, nw_output, nw_hidden, predecessors, symbols, scores, batch_size, max_len):
+    def _backtrack(
+        self, nw_output, nw_hidden, predecessors, symbols, scores, batch_size, max_len
+    ):
         """Backtracks over batch to generate optimal beam_size-sequences.
         Args:
             nw_output [(batch*beam_size, vocab_size)] * sequence_length: A Tensor of outputs from network
@@ -185,22 +206,28 @@ class TopKDecode(torch.nn.Module):
         # its decoder_hidden state when it sees eos_id.  Otherwise, `h_n` contains
         # the last decoder_hidden state of decoding.
         h_n = torch.zeros(nw_hidden[0].size())
-        topk_length = [[max_len] * self.beam_size for _ in range(batch_size)]  # Placeholder for lengths of top-beam_size sequences
-                                                                # Similar to `h_n`
+        topk_length = [
+            [max_len] * self.beam_size for _ in range(batch_size)
+        ]  # Placeholder for lengths of top-beam_size sequences
+        # Similar to `h_n`
 
         # the last step output of the beams are not sorted
         # thus they are sorted here
-        sorted_score, sorted_idx = scores[-1].view(batch_size, self.beam_size).topk(self.beam_size)
+        sorted_score, sorted_idx = (
+            scores[-1].view(batch_size, self.beam_size).topk(self.beam_size)
+        )
         # initialize the sequence scores with the sorted last step beam scores
         score = sorted_score.clone()
 
-        batch_eos_found = [0] * batch_size   # the number of eos_id found
-                                    # in the backward loop below for each batch
+        batch_eos_found = [0] * batch_size  # the number of eos_id found
+        # in the backward loop below for each batch
 
         t = max_len - 1
         # initialize the back pointer with the sorted order of the last step beams.
         # add self.pos_index for indexing variable with batch_size*beam_size as the first dimension.
-        t_predecessors = (sorted_idx + self.pos_index.expand_as(sorted_idx)).view(batch_size * self.beam_size)
+        t_predecessors = (sorted_idx + self.pos_index.expand_as(sorted_idx)).view(
+            batch_size * self.beam_size
+        )
         while t >= 0:
             # Re-order the variables with the back pointer
             current_output = nw_output[t].index_select(0, t_predecessors)
@@ -229,7 +256,7 @@ class TopKDecode(torch.nn.Module):
             #
             eos_indices = symbols[t].data.squeeze(1).eq(self.eos_id).nonzero()
             if eos_indices.dim() > 0:
-                for i in range(eos_indices.size(0)-1, -1, -1):
+                for i in range(eos_indices.size(0) - 1, -1, -1):
                     # Indices of the eos_id symbol for both variables
                     # with batch_size*beam_size as the first dimension, and batch_size, beam_size for
                     # the first two dimensions
@@ -237,7 +264,9 @@ class TopKDecode(torch.nn.Module):
                     b_idx = int(idx[0] / self.beam_size)
                     # The indices of the replacing position
                     # according to the replacement strategy noted above
-                    res_k_idx = self.beam_size - (batch_eos_found[b_idx] % self.beam_size) - 1
+                    res_k_idx = (
+                        self.beam_size - (batch_eos_found[b_idx] % self.beam_size) - 1
+                    )
                     batch_eos_found[b_idx] += 1
                     res_idx = b_idx * self.beam_size + res_k_idx
 
@@ -262,17 +291,33 @@ class TopKDecode(torch.nn.Module):
         # the order (very unlikely)
         score, re_sorted_idx = score.topk(self.beam_size)
         for b_idx in range(batch_size):
-            topk_length[b_idx] = [topk_length[b_idx][k_idx.item()] for k_idx in re_sorted_idx[b_idx,:]]
+            topk_length[b_idx] = [
+                topk_length[b_idx][k_idx.item()] for k_idx in re_sorted_idx[b_idx, :]
+            ]
 
-        re_sorted_idx = (re_sorted_idx + self.pos_index.expand_as(re_sorted_idx)).view(batch_size * self.beam_size)
+        re_sorted_idx = (re_sorted_idx + self.pos_index.expand_as(re_sorted_idx)).view(
+            batch_size * self.beam_size
+        )
 
         # Reverse the sequences and re-order at the same time
         # It is reversed because the backtracking happens in reverse time order
-        output = [step.index_select(0, re_sorted_idx).view(batch_size, self.beam_size, -1) for step in reversed(output)]
-        topk_sequence = [step.index_select(0, re_sorted_idx).view(batch_size, self.beam_size, -1) for step in reversed(topk_sequence)]
-        h_t = [step.index_select(1, re_sorted_idx).view(-1, batch_size, self.beam_size, self.hidden_size) for step in reversed(h_t)]
-        h_n = h_n.index_select(1, re_sorted_idx.data).view(-1, batch_size, self.beam_size, self.hidden_size)
+        output = [
+            step.index_select(0, re_sorted_idx).view(batch_size, self.beam_size, -1)
+            for step in reversed(output)
+        ]
+        topk_sequence = [
+            step.index_select(0, re_sorted_idx).view(batch_size, self.beam_size, -1)
+            for step in reversed(topk_sequence)
+        ]
+        h_t = [
+            step.index_select(1, re_sorted_idx).view(
+                -1, batch_size, self.beam_size, self.hidden_size
+            )
+            for step in reversed(h_t)
+        ]
+        h_n = h_n.index_select(1, re_sorted_idx.data).view(
+            -1, batch_size, self.beam_size, self.hidden_size
+        )
         score = score.data
 
         return output, h_t, h_n, score, topk_length, topk_sequence
-
