@@ -4,6 +4,10 @@ import unicodedata
 import re
 import argparse
 
+import unicodedata
+import re
+import os
+
 
 # Turns a unicode string to plain ASCII (http://stackoverflow.com/a/518232/2809427)
 def unicode_to_ascii(s):
