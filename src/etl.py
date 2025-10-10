@@ -23,13 +23,11 @@ def filter_pairs(pairs):
 def prepare_data(lang_name, is_test=False):
 
     # Read and filter sentences
-    input_lang, output_lang, pairs = read_languages(lang_name, is_test)
-    pairs = filter_pairs(pairs)
+    # input_lang_test, output_lang_test, pairs_test = read_languages(lang_name, is_test)
+    input_lang, output_lang, pairs = read_languages(lang_name)
 
-    # Index words
-    for pair in pairs:
-        input_lang.index_words(pair[0])
-        output_lang.index_words(pair[1])
+    # pairs_test = filter_pairs(pairs)
+    pairs = filter_pairs(pairs)
 
     return input_lang, output_lang, pairs
 
