@@ -15,6 +15,7 @@ python ./src/eval.py \
     --dropout 0.0 \
     --language de \
     --input_file ./rewrite/test.14.en \
+    --input_ref_file ./rewrite/test.14.de \
     --output_file test.14.hypothesis.de \
     --max_len 50 \
     --beam_size 5 \
