@@ -112,9 +112,7 @@ def load_test_data(
     return test_inputs, test_targets
 
 
-def calculate_perplexity(
-    encoder, decoder, test_inputs, test_targets, criterion, device
-):
+def calculate_perplexity(encoder, decoder, test_pairs, criterion, device):
     """테스트 데이터에 대한 Perplexity 계산"""
     # 현재 training 상태 저장
     encoder_was_training = encoder.training
@@ -128,19 +126,25 @@ def calculate_perplexity(
 
     with torch.no_grad():
         # 배치 처리를 위해 패딩
-        batch_size = min(32, len(test_inputs))  # 메모리 고려해서 작은 배치 사용
+        batch_size = min(32, len(test_pairs))  # 메모리 고려해서 작은 배치 사용
         # batch_size = 1
 
-        for i in range(0, len(test_inputs), batch_size):
-            batch_inputs = test_inputs[i : i + batch_size]
-            batch_targets = test_targets[i : i + batch_size]
-            pair_batch = list(zip(batch_inputs, batch_targets))
+        for i in range(0, len(test_pairs), batch_size):
+            # batch_inputs = test_pairs[0][i : i + batch_size]
+            # batch_targets = test_pairs[1][i : i + batch_size]
+            # pair_batch = list(zip(batch_inputs, batch_targets))
+            test_pair_batch = etl.tensor_from_pair_batch(
+                test_pairs[i : i + batch_size],  # 배치 단위로 처리
+                input_lang,
+                output_lang,
+                device,
+            )
 
             input_batch = torch.stack(pair_batch[0])
             target_batch = torch.stack(pair_batch[1])
 
             actual_batch_size = input_batch.size(0)
-            target_length = batch_targets.size(1)
+            target_length = target_batch.size(1)
 
             # Forward pass
             encoder_hidden = encoder.init_hidden(device, actual_batch_size)
@@ -388,14 +392,17 @@ scaler = None  # GradScaler() if device.type == "cuda" else None
 test_inputs = None
 test_targets = None
 try:
-    test_inputs, test_targets = load_test_data(
-        "./rewrite/test.14.en",
-        "./rewrite/test.14.de",
-        input_lang,
-        output_lang,
-        device,
-        max_samples=2716,
+    test_inputs_lang, test_outputs_lang, pairs_test = etl.prepare_data(
+        args.language, is_test=True
     )
+    # test_inputs, test_targets = load_test_data(
+    #     "./rewrite/test.14.en",
+    #     "./rewrite/test.14.de",
+    #     input_lang,
+    #     output_lang,
+    #     device,
+    #     max_samples=2716,
+    # )
     print(f"Loaded {len(test_inputs)} test samples for perplexity calculation")
 except FileNotFoundError:
     print("Test files not found. Perplexity calculation will be skipped.")
@@ -518,7 +525,7 @@ for epoch in range(1, args.n_epochs + 1):
             # Simple perplexity calculation using current loss
             # Perplexity = exp(average_loss)
             current_ppl = calculate_perplexity(
-                encoder, decoder, test_inputs, test_targets, criterion, device
+                encoder, decoder, pairs_test, criterion, device
             )
             # Ensure models are back in training mode
             encoder.train()
