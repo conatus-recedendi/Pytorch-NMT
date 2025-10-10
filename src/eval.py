@@ -7,7 +7,8 @@ from topk_decode import TopKDecode
 from encoder import EncoderRNN
 from language import Language
 from beam import Beam
-import numpy as np
+
+# import numpy as np
 
 
 def pad_sequences_pre(sequences, maxlen, padding_value=0):
@@ -16,16 +17,16 @@ def pad_sequences_pre(sequences, maxlen, padding_value=0):
     """
     padded = []
     for seq in sequences:
-        seq = np.array(seq)
+        seq = torch.tensor(seq)
         if len(seq) < maxlen:
             pad_width = maxlen - len(seq)
-            padded_seq = np.pad(
-                seq, (pad_width, 0), mode="constant", constant_values=padding_value
+            padded_seq = torch.nn.functional.pad(
+                seq, (pad_width, 0), mode="constant", value=padding_value
             )
         else:
             padded_seq = seq[-maxlen:]  # 길이 초과 시 뒤쪽 자름
         padded.append(padded_seq)
-    return np.array(padded)
+    return torch.stack(padded)
 
 
 # Parse argument for input sentence
