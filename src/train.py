@@ -15,6 +15,27 @@ from torch.nn.utils.rnn import pad_sequence
 from torch.cuda.amp import autocast, GradScaler
 import torch.nn.functional as F
 
+import numpy as np
+
+
+def pad_sequences_pre(sequences, maxlen, pad_value=0):
+    """
+    pad_sequences와 동일하지만 앞쪽(pre)에 padding을 붙입니다.
+    """
+    padded = []
+    for seq in sequences:
+        seq = np.array(seq)
+        if len(seq) < maxlen:
+            pad_width = maxlen - len(seq)
+            padded_seq = np.pad(
+                seq, (pad_width, 0), mode="constant", constant_values=pad_value
+            )
+        else:
+            padded_seq = seq[-maxlen:]  # 길이 초과 시 뒤쪽 자름
+        padded.append(padded_seq)
+    return np.array(padded)
+
+
 # Parse argument for language to train
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -117,8 +138,8 @@ def calculate_perplexity(
             batch_targets = test_targets[i : i + batch_size]
 
             # 패딩 적용
-            input_batch = pad_sequence(
-                batch_inputs, batch_first=True, padding_value=2
+            input_batch = pad_sequences_pre(
+                batch_inputs, maxlen=50, padding_value=2
             )  # PAD token
             target_batch = pad_sequence(
                 batch_targets, batch_first=True, padding_value=2
@@ -401,6 +422,7 @@ print(
     "max total_Batch_count: ",
     (len(pairs) // batch_size) * args.n_epochs,
     len(pairs),
+    len(pairs[0]),
     batch_size,
     args.n_epochs,
 )
@@ -461,7 +483,7 @@ for epoch in range(1, args.n_epochs + 1):
         )
         input = training_pair_batch[0]
         target = training_pair_batch[1]
-        input = pad_sequence(input, batch_first=True, padding_value=2)  # PAD token
+        input = pad_sequences_pre(input, maxlen=50, padding_value=2)  # PAD token
         target = pad_sequence(target, batch_first=True, padding_value=2)  # PAD token
 
         # Run the train step

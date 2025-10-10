@@ -20,10 +20,20 @@ python filter_long_sen.py --train_en "train.50k.en" --train_de "train.50k.de" --
 # wmttest14
 
 ```sh
-perl ./tokenizer.perl -l en < ../rewrite/data/wmt/test14/en-de/src.en > ../rewrite/test.14.tokenized.en
-perl ./tokenizer.perl -l de < ../rewrite/data/wmt/test14/en-de/ref.de > ../rewrite/test.14.tokenized.de
+perl ./tokenizer.perl -l en < ../rewrite/data/wmt/test14/en-de/src.en > ../rewrite/test.14.tokenized.en -threads 4
+perl ./tokenizer.perl -l de < ../rewrite/data/wmt/test14/en-de/ref.de > ../rewrite/test.14.tokenized.de -threads 4
 
-python limit_unk.py --train_en "./test.14.tokenized.en" --train_de "./test.14.tokenized.de" --out_en "test.14.50k.en" --out_de "test.14.50k.de" --ref_en "./test.14.tokenized.en"  --ref_de "./test.14.tokenized.de"
+python limit_unk.py --train_en "./test.14.tokenized.en" --train_de "./test.14.tokenized.de" --out_en "test.14.50k.en" --out_de "test.14.50k.de" --ref_en "./train.50k.en"  --ref_de "./train.50k.de"
 
 python filter_long_sen.py --train_en "test.14.50k.en" --train_de "test.14.50k.de" --out_en "test.14.en" --out_de "test.14.de"
+
+```
+
+학습 전에 수정해야 하는 부분들
+
+- train.sh
+- train.py (dropout )
+
+```
+perl multi-bleu.perl test.14.de < test.14.hypothesis.de
 ```

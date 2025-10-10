@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 from torch.nn.utils.rnn import pad_sequence
 import argparse
+import re
 
 
 def build_vocab(file_path, vocab_size=50000):
@@ -34,6 +35,7 @@ def replace_with_unk(file_path, vocab, out_path):
         for line in data.split(b"\n"):
 
             tokens = line.strip().split(b" ")
+            tokens = re.sub(r"\s{2,}", " ", tokens)
             # print(tokens)
             new_tokens = [tok if tok in vocab else b"<UNK>" for tok in tokens]
             # print(new_tokens)
