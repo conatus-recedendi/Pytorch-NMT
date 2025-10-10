@@ -150,7 +150,9 @@ def evaluate_file(input_file_path, output_file_path=None, max_len=10):
         sentences = [line.strip() for line in f if line.strip()]
 
     # Process each sentence
+    idx = 0
     for sentence in sentences:
+
         normalized_sentence = helpers.normalize_string(sentence)
         # normalized_sentence = [normalized_sentence]
         greedy_translation = evaluate_sentence(normalized_sentence, max_len)
@@ -159,6 +161,7 @@ def evaluate_file(input_file_path, output_file_path=None, max_len=10):
         # print(beam_translation)
 
         results.append({"source": sentence, "greedy": greedy_translation})
+        print(f"{idx}: {sentence} => {greedy_translation}")
 
     # Save results to output file if specified
     if output_file_path:
