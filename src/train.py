@@ -100,8 +100,25 @@ def load_test_data(
             for word in de_sent.split()
         ]
 
-        en_indexes.append(Language.eos_token)  # EOS token
-        de_indexes.append(Language.eos_token)  # EOS token
+        if len(en_indexes) < args.max_len:
+            en_indexes = (
+                [Language.pad_token] * (args.max_len - len(en_indexes) - 1)
+                + en_indexes
+                + Language.eos_token
+            )
+        else:
+            en_indexes = en_indexes[: args.max_len - 1] + [Language.eos_token]
+        if len(de_indexes) < args.max_len:
+            de_indexes = (
+                de_indexes
+                + Language.eos_token
+                + [Language.pad_token] * (args.max_len - len(de_indexes) - 1)
+            )
+        else:
+            de_indexes = de_indexes[: args.max_len - 1] + [Language.eos_token]
+
+        assert len(en_indexes) == args.max_len
+        assert len(de_indexes) == args.max_len
 
         en_tensor = torch.LongTensor(en_indexes).view(-1, 1).to(device)
         de_tensor = torch.LongTensor(de_indexes).view(-1, 1).to(device)
@@ -136,15 +153,15 @@ def calculate_perplexity(
             batch_targets = test_targets[i : i + batch_size]
 
             # 패딩 적용
-            input_batch = pad_sequences_pre(
-                batch_inputs, maxlen=50, padding_value=2
-            )  # PAD token
-            target_batch = pad_sequence(
-                batch_targets, batch_first=True, padding_value=2
-            )  # PAD token
+            # input_batch = pad_sequences_pre(
+            #     batch_inputs, maxlen=50, padding_value=2
+            # )  # PAD token
+            # target_batch = pad_sequence(
+            #     batch_targets, batch_first=True, padding_value=2
+            # )  # PAD token
 
             actual_batch_size = input_batch.size(0)
-            target_length = target_batch.size(1)
+            target_length = batch_targets.size(1)
 
             # Forward pass
             encoder_hidden = encoder.init_hidden(device, actual_batch_size)
@@ -155,7 +172,7 @@ def calculate_perplexity(
             # <SOS> 토큰으로 초기화
             decoder_input = (
                 torch.LongTensor(actual_batch_size, 1)
-                .fill_(Language.sos_token)
+                .fill_(Language.eos_token)
                 .to(device)
             )
             decoder_context = torch.zeros(1, actual_batch_size, decoder.hidden_size).to(
@@ -188,7 +205,7 @@ def calculate_perplexity(
             )
             target_flat = target_batch.view(-1)
             # target_di shape: [batch_size] when squeezed
-            ignore_idxs = {2, 3}
+            ignore_idxs = {2}
 
             # 유효 위치 마스크 만들기
             mask = ~torch.isin(
@@ -481,8 +498,8 @@ for epoch in range(1, args.n_epochs + 1):
         )
         input = training_pair_batch[0]
         target = training_pair_batch[1]
-        input = pad_sequences_pre(input, maxlen=50, padding_value=2)  # PAD token
-        target = pad_sequence(target, batch_first=True, padding_value=2)  # PAD token
+        # input = pad_sequences_pre(input, maxlen=50, padding_value=2)  # PAD token
+        # target = pad_sequence(target, batch_first=True, padding_value=2)  # PAD token
 
         # Run the train step
         if scaler is not None:

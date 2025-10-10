@@ -207,7 +207,7 @@ def greedy_decode(decoder_context, decoder_hidden, encoder_outputs, max_len):
     decoded_words = []
     encoder_len = encoder_outputs.size(0)
     decoder_attentions = torch.zeros(max_len, encoder_len)
-    decoder_input = torch.LongTensor([[Language.sos_token]]).to(device)  # SOS
+    decoder_input = torch.LongTensor([[Language.eos_token]]).to(device)  # SOS
     for di in range(max_len):
         decoder_output, decoder_context, decoder_hidden, decoder_attention = decoder(
             decoder_input, decoder_context, decoder_hidden, encoder_outputs
