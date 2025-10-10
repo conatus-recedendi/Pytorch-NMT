@@ -141,14 +141,15 @@ def evaluate_sentence(sentence, max_len=10):
     return greedy_sentence
 
 
-def evaluate_file(input_file_path, output_file_path=None, max_len=10):
+def evaluate_file(input_file_path, input_ref_path, output_file_path=None, max_len=10):
     """Evaluate sentences from input file"""
     results = []
 
     # Read input sentences
     with open(input_file_path, "r", encoding="utf-8") as f:
         sentences = [line.strip() for line in f if line.strip()]
-
+    with open(input_ref_path, "r", encoding="utf-8") as f:
+        ref_sentences = [line.strip() for line in f if line.strip()]
     # Process each sentence
     idx = 0
     for sentence in sentences:
@@ -161,7 +162,11 @@ def evaluate_file(input_file_path, output_file_path=None, max_len=10):
         # print(beam_translation)
 
         results.append({"source": sentence, "greedy": greedy_translation})
-        print(f"{idx}: {sentence} => {greedy_translation}")
+        print(f"{idx}")
+        print(f"src: {sentence}")
+        print(f"best: {ref_sentences[idx]}")
+        print(f"base: {greedy_translation}")
+        print("==============================")
         idx += 1
 
     # Save results to output file if specified
@@ -295,7 +300,7 @@ def print_sentence(words, lengths=None, mode="greedy"):
 
 # Evaluate sentences from input file
 if args.input_file:
-    evaluate_file(args.input_file, args.output_file, args.max_len)
+    evaluate_file(args.input_file, args.input_ref_file, args.output_file, args.max_len)
 else:
     print("Please provide --input_file argument")
     exit(1)
