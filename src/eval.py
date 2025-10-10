@@ -120,7 +120,8 @@ def evaluate_sentence(sentence, max_len=10):
     # Run through encoder
     input = input.view(1, -1)  # [1, len]
     # input = pad_sequences_pre(input, maxlen=50, padding_value=2)  # PAD token
-    encoder_hidden = encoder.init_hidden(device)
+    encoder_hidden = encoder.init_hidden(device, 1)
+
     encoder_outputs, encoder_hidden = encoder(input, encoder_hidden)
 
     # Create starting vectors for decoder
@@ -210,17 +211,17 @@ def greedy_decode(decoder_context, decoder_hidden, encoder_outputs, max_len):
     decoded_words = []
     encoder_len = encoder_outputs.size(0)
     decoder_attentions = torch.zeros(max_len, encoder_len)
-    decoder_input = torch.LongTensor([[Language.eos_token]]).to(device)  # SOS
+    decoder_input = torch.LongTensor(1, 1).fill_(Language.sos_token).to(device)
     for di in range(max_len):
         decoder_output, decoder_context, decoder_hidden, decoder_attention = decoder(
             decoder_input, decoder_context, decoder_hidden, encoder_outputs
         )
-        decoder_attentions[di, : decoder_attention.size(2)] += (
-            decoder_attention.squeeze(0).squeeze(0).cpu().data
-        )
+        # decoder_attentions[di, : decoder_attention.size(2)] += (
+        #     decoder_attention.squeeze(0).squeeze(0).cpu().data
+        # )
 
         # Choose top word from output
-        topv, topi = decoder_output.data.topk(1)
+        topv, topi = decoder_output.data.topk(1, dim=1)
         if di < 5:
             # print(decoder_output.data.topk(10))
             print(topi)
