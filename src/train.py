@@ -141,8 +141,8 @@ def calculate_perplexity(encoder, decoder, test_pairs, criterion, device):
             )
             print(type(test_pair_batch), len(test_pair_batch))
 
-            input_batch = torch.stack(pair_batch[0])
-            target_batch = torch.stack(pair_batch[1])
+            input_batch = torch.stack(test_pair_batch[0])
+            target_batch = torch.stack(test_pair_batch[1])
 
             actual_batch_size = input_batch.size(0)
             target_length = target_batch.size(1)
