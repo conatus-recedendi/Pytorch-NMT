@@ -211,7 +211,7 @@ def greedy_decode(decoder_context, decoder_hidden, encoder_outputs, max_len):
     decoded_words = []
     encoder_len = encoder_outputs.size(0)
     decoder_attentions = torch.zeros(max_len, encoder_len)
-    decoder_input = torch.LongTensor(1, 1).fill_(Language.sos_token).to(device)
+    decoder_input = torch.LongTensor(1, 1).fill_(Language.eos_token).to(device)
     for di in range(max_len):
         decoder_output, decoder_context, decoder_hidden, decoder_attention = decoder(
             decoder_input, decoder_context, decoder_hidden, encoder_outputs
@@ -241,7 +241,7 @@ def beam_decode(decoder_context, decoder_hidden, encoder_outputs, max_len, beam_
     # [1, batch_size x beam_size]
     decoder_input = (
         torch.ones(batch_size * beam_size, dtype=torch.long, device=device)
-        * Language.sos_token
+        * Language.eos_token
     )
 
     # [num_layers, batch_size x beam_size, hidden_size]
