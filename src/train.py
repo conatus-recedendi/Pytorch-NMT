@@ -139,7 +139,7 @@ def calculate_perplexity(encoder, decoder, test_pairs, criterion, device):
                 output_lang,
                 device,
             )
-            print(type(test_pair_batch), len(test_pair_batch))
+            # print(type(test_pair_batch), len(test_pair_batch))
 
             input_batch = torch.stack(test_pair_batch[0])
             target_batch = torch.stack(test_pair_batch[1])
@@ -153,7 +153,7 @@ def calculate_perplexity(encoder, decoder, test_pairs, criterion, device):
             encoder_outputs, encoder_hidden = encoder(input_batch, encoder_hidden)
 
             # Decoder
-            # <SOS> 토큰으로 초기화
+            # <EOS> 토큰으로 초기화
             decoder_input = (
                 torch.LongTensor(actual_batch_size, 1)
                 .fill_(Language.eos_token)
@@ -259,7 +259,7 @@ def train(
 
     # Prepare input and output variables
     # decoder_input = torch.LongTensor([0]).to(device)
-    decoder_input = torch.LongTensor(batch_size, 1).fill_(Language.sos_token).to(device)
+    decoder_input = torch.LongTensor(batch_size, 1).fill_(Language.eos_token).to(device)
     #
     decoder_context = torch.zeros(1, batch_size, decoder.hidden_size).to(device)
 
@@ -480,11 +480,11 @@ for epoch in range(1, args.n_epochs + 1):
             )
             sys.stdout.flush()
         pair_batch = pairs[_ * batch_size : (_ + 1) * batch_size]
-        print(type(pair_batch), len(pair_batch), len(pair_batch[0]))
+        # print(type(pair_batch), len(pair_batch), len(pair_batch[0]))
         training_pair_batch = etl.tensor_from_pair_batch(
             pair_batch, input_lang, output_lang, device
         )
-        print(type(training_pair_batch), len(training_pair_batch))
+        # print(type(training_pair_batch), len(training_pair_batch))
         input = torch.stack(training_pair_batch[0])
         target = torch.stack(training_pair_batch[1])
 
