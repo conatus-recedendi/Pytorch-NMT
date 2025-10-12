@@ -112,8 +112,8 @@ def tensor_from_pair(pair_batch, input_lang, output_lang, device="cpu"):
     batch_input: list = []
     batch_target = []
     for pair in pair_batch:
-        input = tensor_from_sentence(input_lang, pair[0], device)
-        target = tensor_from_sentence(output_lang, pair[1], device)
+        input = tensor_from_sentence(input_lang, pair[0], device, is_src=True)
+        target = tensor_from_sentence(output_lang, pair[1], device, is_src=False)
         batch_input.append(input)
         batch_target.append(target)
 
@@ -126,8 +126,8 @@ def tensor_from_pair_batch(pair_batch, input_lang, output_lang, device="cpu"):
     targets = []
 
     for pair in pair_batch:
-        input_tensor = tensor_from_sentence(input_lang, pair[0], device)
-        target_tensor = tensor_from_sentence(output_lang, pair[1], device)
+        input_tensor = tensor_from_sentence(input_lang, pair[0], device, is_src=True)
+        target_tensor = tensor_from_sentence(output_lang, pair[1], device, is_src=False)
         inputs.append(input_tensor)
         targets.append(target_tensor)
 
