@@ -189,25 +189,25 @@ def calculate_perplexity(encoder, decoder, test_pairs, criterion, device):
             )
             target_flat = target_batch.view(-1)
             # target_di shape: [batch_size] when squeezed
-            ignore_idxs = {2}
+            # ignore_idxs = {2}
 
             # 유효 위치 마스크 만들기
-            mask = ~torch.isin(
-                target_flat, torch.tensor(list(ignore_idxs), device=target_flat.device)
-            )
+            # mask = ~torch.isin(
+            #     target_flat, torch.tensor(list(ignore_idxs), device=target_flat.device)
+            # )
 
             # Loss 계산
-            loss = F.nll_loss(decoder_outputs_flat, target_flat, reduction="none")
-            loss = (loss * mask).sum()
+            # loss = F.nll_loss(decoder_outputs_flat, target_flat, reduction="none")
+            # loss = (loss * mask).sum()
 
-            # loss = criterion(decoder_outputs_flat, target_flat)
+            loss = criterion(decoder_outputs_flat, target_flat)
             # valid_tokens = (
             #     (target_flat != 0).sum().item()
             # )  # ignore all PAD token = 0,  1, 2, 3,
             # loss = loss / valid_tokens if valid_tokens > 0 else loss
 
             total_loss += loss
-            total_tokens += mask.sum()
+            # total_tokens += mask.sum()
 
     # 원래 training 상태로 복원
     if encoder_was_training:
@@ -291,8 +291,8 @@ def train(
 
         # NLLLoss with ignore_index will handle padding automatically
         loss = criterion(decoder_outputs_flat, target_flat)
-        valid_tokens = (target_flat != 2).sum().item()  # PAD token = 2
-        loss = loss / valid_tokens if valid_tokens > 0 else loss
+        # valid_tokens = (target_flat != 2).sum().item()  # PAD token = 2
+        # loss = loss / valid_tokens if valid_tokens > 0 else loss
     else:
         # No teacher forcing: use previous prediction as next input
         loss_sum = 0
@@ -384,7 +384,9 @@ decoder = decoder.to(device)
 encoder_optimizer = optim.SGD(encoder.parameters(), lr=args.lr)
 # decoder_optimizer = optim.Adam(decoder.parameters(), lr=args.lr)
 decoder_optimizer = optim.SGD(decoder.parameters(), lr=args.lr)
-criterion = nn.NLLLoss(ignore_index=2, reduction="sum")  # Ignore padding tokens (PAD=2)
+criterion = nn.NLLLoss(
+    ignore_index=2, reduction="mean"
+)  # Ignore padding tokens (PAD=2)
 
 # Initialize mixed precision scaler - Disable for debugging
 scaler = None  # GradScaler() if device.type == "cuda" else None
