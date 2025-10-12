@@ -290,9 +290,9 @@ def train(
         target_flat = target.view(-1)
 
         # decoder_outputs_flat에서 가장 큰 값의 인덱싱만 프린트
-        max_values, predicted_indices = torch.max(decoder_outputs_flat, dim=1)
-        print(max_values)
-        print(predicted_indices, target_flat)
+        # max_values, predicted_indices = torch.max(decoder_outputs_flat, dim=1)
+        # print(max_values)
+        # print(predicted_indices, target_flat)
         # NLLLoss with ignore_index will handle padding automatically
         loss = criterion(decoder_outputs_flat, target_flat)
         # valid_tokens = (target_flat != 2).sum().item()  # PAD token = 2
@@ -554,7 +554,7 @@ for epoch in range(1, args.n_epochs + 1):
     # if total_batch_count % 10000 == 0:
     #     # get test perplexity for Figure 5
 
-    id = "id=7_attn=%s,local=%s,dropout=d%.2f,epoch=%d" % (
+    id = "id=8_attn=%s,local=%s,dropout=d%.2f,epoch=%d" % (
         args.attn_model,
         args.local if args.local else "global",
         args.dropout,
