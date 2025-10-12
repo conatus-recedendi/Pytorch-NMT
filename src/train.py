@@ -206,7 +206,9 @@ def calculate_perplexity(encoder, decoder, test_pairs, criterion, device):
             # )  # ignore all PAD token = 0,  1, 2, 3,
             # loss = loss / valid_tokens if valid_tokens > 0 else loss
 
-            total_loss += loss
+            total_loss += loss * actual_batch_size
+            # total tokens += batch element size
+            total_tokens += actual_batch_size
             # total_tokens += mask.sum()
 
     # 원래 training 상태로 복원
