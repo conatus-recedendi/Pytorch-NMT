@@ -542,10 +542,10 @@ for epoch in range(1, args.n_epochs + 1):
             print(
                 f"Approximate Perplexity at batch {total_batch_count}: {current_ppl:.4f}"
             )
-            print("Continuing training...\n")
             print(
                 f"Batch Loss: {batch_loss:.4f}, Avg Loss: {avg_loss:.4f}, Perplexity: {math.exp(min(avg_loss, 10)):.4f}"
             )
+            print("Continuing training...\n")
     # print(input.shape)
 
     # Keep track of loss
