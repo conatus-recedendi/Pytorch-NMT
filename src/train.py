@@ -289,7 +289,10 @@ def train(
         )
         target_flat = target.view(-1)
 
-        print(decoder_outputs_flat, target_flat)
+        # decoder_outputs_flat에서 가장 큰 값의 인덱싱만 프린트
+        max_values, predicted_indices = torch.max(decoder_outputs_flat, dim=1)
+        print(max_values)
+        print(predicted_indices, target_flat)
         # NLLLoss with ignore_index will handle padding automatically
         loss = criterion(decoder_outputs_flat, target_flat)
         # valid_tokens = (target_flat != 2).sum().item()  # PAD token = 2
