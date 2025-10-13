@@ -33,8 +33,9 @@ class AttentionDecoderRNN(nn.Module):
         self.dropout = nn.Dropout(dropout)
         self.lstm = nn.LSTM(embedding_size, hidden_size, n_layers, dropout=dropout)
         if attn_model == "base":
-            self.Wc = None
-            self.Ws = nn.Linear(hidden_size, tgt_vocab_size)
+            # self.Wc = nn.Linear(hidden_size * 2, hidden_size, bias=True)
+            self.Wc = None  # Not used in 'base' attention
+            self.Ws = nn.Linear(hidden_size, tgt_vocab_size, bias=True)
         else:
             self.Wc = nn.Linear(hidden_size * 2, hidden_size, bias=True)
             self.Ws = nn.Linear(hidden_size, tgt_vocab_size, bias=True)
@@ -81,6 +82,12 @@ class AttentionDecoderRNN(nn.Module):
             attention_weights = None
             # output = F.tanh(self.out(rnn_output), dim=2)
             # h_tilde = rnn_output
+            return (
+                F.log_softmax(self.Ws(rnn_output).squeeze(0), dim=1),
+                context,
+                hidden_state,
+                attention_weights,
+            )
 
         else:
             attention_weights = self.attention(rnn_output.squeeze(0), encoder_outputs)
