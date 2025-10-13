@@ -75,12 +75,12 @@ class AttentionDecoderRNN(nn.Module):
         # Calculate attention
         if self.attn_model == "base":
             # decoder context는 사용하지 않음
-            context = torch.zeros(
-                1, embedded.size(1), self.hidden_size, device=embedded.device
-            )
+            context = encoder_outputs[-1, :, :].unsqueeze(
+                0
+            )  # [1, batch, hidden_size  ]
             attention_weights = None
             # output = F.tanh(self.out(rnn_output), dim=2)
-            h_tilde = rnn_output
+            # h_tilde = rnn_output
 
         else:
             attention_weights = self.attention(rnn_output.squeeze(0), encoder_outputs)
@@ -92,9 +92,9 @@ class AttentionDecoderRNN(nn.Module):
 
             context = context.transpose(0, 1)  # [1, -1, hidden_size]
 
-            h_tilde = torch.tanh(
-                self.Wc(torch.cat((rnn_output, context), 2))
-            )  # [1, -1, hidden_size]
+        h_tilde = torch.tanh(
+            self.Wc(torch.cat((rnn_output, context), 2))
+        )  # [1, -1, hidden_size]
         logits = self.Ws(h_tilde).squeeze(0)  # [batch, tgt_vocab_size]
         log_prob = F.log_softmax(logits, dim=1)
 
