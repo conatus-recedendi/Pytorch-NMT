@@ -438,8 +438,14 @@ print(
 )
 for epoch in range(1, args.n_epochs + 1):
     # Get training data for this cycle
-    if epoch > 5:
+    if args.dropout < 0.01 and epoch > 5:
         lr = args.lr / (2 ** (epoch - 5))  # More efficient learning rate decay
+        for param_group in encoder_optimizer.param_groups:
+            param_group["lr"] = lr
+        for param_group in decoder_optimizer.param_groups:
+            param_group["lr"] = lr
+    elif args.dropout >= 0.01 and epoch > 8:
+        lr = args.lr / (2 ** (epoch - 8))  # More efficient learning rate decay
         for param_group in encoder_optimizer.param_groups:
             param_group["lr"] = lr
         for param_group in decoder_optimizer.param_groups:

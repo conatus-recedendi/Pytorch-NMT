@@ -44,7 +44,7 @@ def read_languages(lang, is_test=False):
     if is_test:
         doc = open("./rewrite/test.14.%s" % lang, "rb")
     else:
-        doc = open("./rewrite/train.len50.%s" % lang, "rb")
+        doc = open("./rewrite/train.%s" % lang, "rb")
     lines = doc.read().strip().split(b"\n")
     lines = [l.decode("utf-8", errors="strict") for l in lines]
 
@@ -52,7 +52,7 @@ def read_languages(lang, is_test=False):
     if is_test:
         doc_en = open("./rewrite/test.14.en", "rb")
     else:
-        doc_en = open("./rewrite/train.len50.en", "rb")
+        doc_en = open("./rewrite/train.en", "rb")
     lines_en = doc_en.read().strip().split(b"\n")
     lines_en = [l.decode("utf-8", errors="strict") for l in lines_en]
     print("loaded")
@@ -75,15 +75,17 @@ Data Transformation
 
 
 # Returns a list of indexes, one for each word in the sentence
-def indexes_from_sentence(lang, sentence):
+def indexes_from_sentence(lang, sentence, is_reverse=False):
+    if is_reverse:
+        return [lang.get_index_word(word) for word in sentence.split(" ")[::-1]]
     return [lang.get_index_word(word) for word in sentence.split(" ")]
 
 
-def tensor_from_sentence(lang, sentence, device="cpu", is_src=True):
+def tensor_from_sentence(lang, sentence, device="cpu", is_src=True, is_reverse=False):
     # print(sentence)
 
     max_len = 50
-    indexes = indexes_from_sentence(lang, sentence)
+    indexes = indexes_from_sentence(lang, sentence, is_reverse=is_reverse)
 
     if is_src:
         if len(indexes) < max_len:
@@ -107,12 +109,16 @@ def tensor_from_sentence(lang, sentence, device="cpu", is_src=True):
     return tensor
 
 
-def tensor_from_pair(pair_batch, input_lang, output_lang, device="cpu"):
+def tensor_from_pair(
+    pair_batch, input_lang, output_lang, device="cpu", is_reverse=False
+):
     # empty e tensor
     batch_input: list = []
     batch_target = []
     for pair in pair_batch:
-        input = tensor_from_sentence(input_lang, pair[0], device, is_src=True)
+        input = tensor_from_sentence(
+            input_lang, pair[0], device, is_src=True, is_reverse=is_reverse
+        )
         target = tensor_from_sentence(output_lang, pair[1], device, is_src=False)
         batch_input.append(input)
         batch_target.append(target)
@@ -120,13 +126,17 @@ def tensor_from_pair(pair_batch, input_lang, output_lang, device="cpu"):
     return batch_input, batch_target
 
 
-def tensor_from_pair_batch(pair_batch, input_lang, output_lang, device="cpu"):
+def tensor_from_pair_batch(
+    pair_batch, input_lang, output_lang, device="cpu", is_reverse=False
+):
     """Optimized batch processing for tensor conversion"""
     inputs = []
     targets = []
 
     for pair in pair_batch:
-        input_tensor = tensor_from_sentence(input_lang, pair[0], device, is_src=True)
+        input_tensor = tensor_from_sentence(
+            input_lang, pair[0], device, is_src=True, is_reverse=is_reverse
+        )
         target_tensor = tensor_from_sentence(output_lang, pair[1], device, is_src=False)
         inputs.append(input_tensor)
         targets.append(target_tensor)
