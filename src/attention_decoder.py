@@ -33,9 +33,11 @@ class AttentionDecoderRNN(nn.Module):
         self.dropout = nn.Dropout(dropout)
         self.lstm = nn.LSTM(embedding_size, hidden_size, n_layers, dropout=dropout)
         if attn_model == "base":
-            self.out = nn.Linear(hidden_size, tgt_vocab_size)
+            self.Wc = None
+            self.Ws = nn.Linear(hidden_size, tgt_vocab_size)
         else:
-            self.out = nn.Linear(hidden_size * 2, tgt_vocab_size)
+            self.Wc = nn.Linear(hidden_size * 2, hidden_size, bias=True)
+            self.Ws = nn.Linear(hidden_size, tgt_vocab_size, bias=True)
 
         # Choose attention model
         if attn_model is not None:
@@ -77,7 +79,9 @@ class AttentionDecoderRNN(nn.Module):
                 1, embedded.size(1), self.hidden_size, device=embedded.device
             )
             attention_weights = None
-            output = F.log_softmax(self.out(rnn_output), dim=2)
+            # output = F.tanh(self.out(rnn_output), dim=2)
+            h_tilde = rnn_output
+
         else:
             attention_weights = self.attention(rnn_output.squeeze(0), encoder_outputs)
             #  print(attention_weights.shape)
@@ -88,7 +92,10 @@ class AttentionDecoderRNN(nn.Module):
 
             context = context.transpose(0, 1)  # [1, -1, hidden_size]
 
-            # Predict output
-            output = F.log_softmax(self.out(torch.cat((rnn_output, context), 2)), dim=2)
-            output = output.squeeze(0)
-        return output, context, hidden_state, attention_weights
+            h_tilde = torch.tanh(
+                self.Wc(torch.cat((rnn_output, context), 2))
+            )  # [1, -1, hidden_size]
+        logits = self.Ws(h_tilde).squeeze(0)  # [batch, tgt_vocab_size]
+        log_prob = F.log_softmax(logits, dim=1)
+
+        return log_prob, context, hidden_state, attention_weights
