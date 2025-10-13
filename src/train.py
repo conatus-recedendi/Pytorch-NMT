@@ -126,7 +126,7 @@ def calculate_perplexity(encoder, decoder, test_pairs, criterion, device):
 
     with torch.no_grad():
         # 배치 처리를 위해 패딩
-        batch_size = min(32, len(test_pairs))  # 메모리 고려해서 작은 배치 사용
+        batch_size = 32  # 메모리 고려해서 작은 배치 사용
         # batch_size = 1
 
         for i in range(0, len(test_pairs), batch_size):
@@ -138,6 +138,7 @@ def calculate_perplexity(encoder, decoder, test_pairs, criterion, device):
                 input_lang,
                 output_lang,
                 device,
+                is_reverse=False,
             )
             # print(type(test_pair_batch), len(test_pair_batch))
 

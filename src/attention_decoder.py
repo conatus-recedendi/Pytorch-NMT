@@ -87,7 +87,7 @@ class AttentionDecoderRNN(nn.Module):
         )  # [1, -1, embedding_size + hidden_size]
         rnn_output, hidden_state = self.lstm(
             rnn_input, hidden_state
-        )  # [1, -1, hidden_size]
+        )  # rnn_output: [1, batch, hidden_size]
 
         # Calculate attention
         #  print(rnn_output.shape)

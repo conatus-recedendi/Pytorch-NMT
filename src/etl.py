@@ -11,7 +11,7 @@ max_length = 50
 
 def filter_pair(p):
     is_good_length = (
-        len(p[0].split(" ")) < max_length and len(p[1].split(" ")) < max_length
+        len(p[0].split(" ")) <= max_length and len(p[1].split(" ")) <= max_length
     )
     return is_good_length
 
@@ -88,7 +88,7 @@ def tensor_from_sentence(lang, sentence, device="cpu", is_src=True, is_reverse=F
     indexes = indexes_from_sentence(lang, sentence, is_reverse=is_reverse)
 
     if is_src:
-        if len(indexes) < max_len:
+        if len(indexes) <= max_len:
             indexes = (
                 [Language.pad_token] * (max_len - len(indexes) - 1)
                 + indexes
@@ -97,7 +97,7 @@ def tensor_from_sentence(lang, sentence, device="cpu", is_src=True, is_reverse=F
         else:
             indexes = indexes[: max_len - 1] + [Language.eos_token]
     else:
-        if len(indexes) < max_len:
+        if len(indexes) <= max_len:
             indexes = (
                 indexes
                 + [Language.eos_token]

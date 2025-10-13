@@ -126,9 +126,10 @@ class Attention(nn.Module):
             # ht: [batch_size, hidden_size]
             # Result: [batch_size, seq_len] by repeating ht seq_len times
 
-            energies = (
-                hidden.unsqueeze(1).expand(batch_size, seq_len, hidden_size).sum(dim=2)
-            )
+            # energies = (
+            #     hidden.unsqueeze(1).expand(batch_size, seq_len, hidden_size).sum(dim=2)
+            # )
+            return torch.ones(batch_size, 1, seq_len, device=hidden.device) / seq_len
 
         # Apply temperature scaling for numerical stability
         energies = energies / math.sqrt(self.hidden_size)
