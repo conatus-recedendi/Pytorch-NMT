@@ -31,10 +31,11 @@ class AttentionDecoderRNN(nn.Module):
         # Define layers
         self.embedding = nn.Embedding(tgt_vocab_size, embedding_size)
         self.dropout = nn.Dropout(dropout)
-        self.lstm = nn.LSTM(
-            hidden_size + embedding_size, hidden_size, n_layers, dropout=dropout
-        )
-        self.out = nn.Linear(hidden_size * 2, tgt_vocab_size)
+        self.lstm = nn.LSTM(embedding_size, hidden_size, n_layers, dropout=dropout)
+        if attn_model == "base":
+            self.out = nn.Linear(hidden_size, tgt_vocab_size)
+        else:
+            self.out = nn.Linear(hidden_size * 2, tgt_vocab_size)
 
         # Choose attention model
         if attn_model is not None:
@@ -55,51 +56,39 @@ class AttentionDecoderRNN(nn.Module):
         print(f"AttentionDecoder: Initialized all parameters with U[-0.1, 0.1]")
 
     def forward(self, input, decoder_context, hidden_state, encoder_outputs):
-        """Run forward propagation one step at a time.
-
-        Get the embedding of the current input word (last output word) [s = 1 x batch_size x seq_len]
-        then combine them with the previous context. Use this as input and run through the RNN. Next,
-        calculate the attention from the current RNN state and all encoder outputs. The final output
-        is the next word prediction using the RNN hidden_state state and context vector.
-
-        Args:
-            input: torch Variable representing the word input constituent
-            decoder_context: torch Variable representing the previous context
-            hidden_state: torch Variable representing the previous hidden_state state output
-            encoder_outputs: torch Variable containing the encoder output values
-
-        Return:
-            output: torch Variable representing the predicted word constituent
-            context: torch Variable representing the context value
-            hidden_state: torch Variable representing the hidden_state state of the RNN
-            attention_weights: torch Variable retrieved from the attention model
-        """
 
         # Run through RNN
         input = input.view(1, -1)
         embedded = self.embedding(input)  # [1, -1, embedding_size]
         embedded = self.dropout(embedded)
 
-        #  print(embedded.shape)
-        #  print(decoder_context.shape)
-        rnn_input = torch.cat(
-            (embedded, decoder_context), 2
-        )  # [1, -1, embedding_size + hidden_size]
+        # 현 시점에서 LSTM 호출
+        # rnn_input = torch.cat(
+        #     (embedded, decoder_context), 2
+        # )  # [1, -1, embedding_size + hidden_size]
         rnn_output, hidden_state = self.lstm(
-            rnn_input, hidden_state
+            embedded, hidden_state
         )  # rnn_output: [1, batch, hidden_size]
 
         # Calculate attention
-        #  print(rnn_output.shape)
-        #  print(encoder_outputs.shape)
-        attention_weights = self.attention(rnn_output.squeeze(0), encoder_outputs)
-        #  print(attention_weights.shape)
-        context = attention_weights.bmm(
-            encoder_outputs.transpose(0, 1)
-        )  # [-1, 1, hidden_size]
-        context = context.transpose(0, 1)  # [1, -1, hidden_size]
+        if self.attn_model == "base":
+            # decoder context는 사용하지 않음
+            context = torch.zeros(
+                1, embedded.size(1), self.hidden_size, device=embedded.device
+            )
+            attention_weights = None
+            output = F.log_softmax(self.out(rnn_output), dim=2)
+        else:
+            attention_weights = self.attention(rnn_output.squeeze(0), encoder_outputs)
+            #  print(attention_weights.shape)
+            # context is weight sum of attention weight and encoder_output
+            context = torch.bmm(
+                attention_weights, encoder_outputs.transpose(0, 1)
+            )  # [batch_size, 1, hidden_size]
 
-        # Predict output
-        output = F.log_softmax(self.out(torch.cat((rnn_output, context), 2)), dim=2)
-        output = output.squeeze(0)
+            context = context.transpose(0, 1)  # [1, -1, hidden_size]
+
+            # Predict output
+            output = F.log_softmax(self.out(torch.cat((rnn_output, context), 2)), dim=2)
+            output = output.squeeze(0)
         return output, context, hidden_state, attention_weights
