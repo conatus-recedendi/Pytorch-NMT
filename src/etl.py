@@ -90,9 +90,10 @@ def tensor_from_sentence(lang, sentence, device="cpu", is_src=True, is_reverse=F
     if is_src:
         if len(indexes) < max_len:
             indexes = (
-                [Language.pad_token] * (max_len - len(indexes) - 1)
-                + indexes
+                # [Language.pad_token] * (max_len - len(indexes) - 1)
+                indexes
                 + [Language.eos_token]
+                + [Language.pad_token] * (max_len - len(indexes) - 1)
             )
         else:
             indexes = indexes[: max_len - 1] + [Language.eos_token]

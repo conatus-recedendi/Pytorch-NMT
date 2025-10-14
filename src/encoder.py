@@ -21,7 +21,7 @@ class EncoderRNN(nn.Module):
         self.hidden_size = hidden_size
         self.n_layers = n_layers
 
-        self.embedding = nn.Embedding(src_vocab_size, embedding_size)
+        self.embedding = nn.Embedding(src_vocab_size, embedding_size, padding_idx=2)
         self.dropout = nn.Dropout(dropout)
         self.rnn = nn.LSTM(embedding_size, hidden_size, n_layers)
 
@@ -46,13 +46,29 @@ class EncoderRNN(nn.Module):
         """
         inputs: [batch, len]
         """
+        lengths = (inputs != 2).sum(dim=1).cpu().numpy().tolist()
+
         # inputs: [batch, len]
         embedded = self.embedding(inputs)  # [batch, len, embedding_size]
         embedded = self.dropout(embedded)
         embedded = embedded.transpose(0, 1)  # [len, batch, embedding_size] for LSTM
-        output, hidden_state = self.rnn(
-            embedded, hidden_state
-        )  # hidden_state is (h_n, c_n) tuple
+
+        # 3. Pack sequences (PAD 무시)
+        packed_embedded = nn.utils.rnn.pack_padded_sequence(
+            embedded, lengths, batch_first=False, enforce_sorted=False
+        )
+
+        # 4. RNN 처리 (PAD가 hidden state에 영향 안줌)
+        packed_output, hidden_state = self.rnn(packed_embedded, hidden_state)
+
+        # output, hidden_state = self.rnn(
+        #     embedded, hidden_state
+        # )  # hidden_state is (h_n, c_n) tuple
+
+        # 5. Unpack sequences
+        output, _ = nn.utils.rnn.pad_packed_sequence(
+            packed_output, batch_first=False, padding_value=0.0
+        )
         return output, hidden_state
 
     def init_hidden(self, device, actual_batch_size=None):
