@@ -563,7 +563,7 @@ for epoch in range(1, args.n_epochs + 1):
     # if total_batch_count % 10000 == 0:
     #     # get test perplexity for Figure 5
 
-    id = "id=9_attn=%s,local=%s,dropout=d%.2f,epoch=%d" % (
+    id = "id=10_attn=%s,local=%s,dropout=d%.2f,epoch=%d" % (
         args.attn_model,
         args.local if args.local else "global",
         args.dropout,
