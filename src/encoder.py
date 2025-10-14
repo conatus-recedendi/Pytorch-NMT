@@ -76,7 +76,8 @@ class EncoderRNN(nn.Module):
         # hidden_state = hidden_state.to(device)
         # -0.1, 0.1 사이로 초기화
         cell_state = nn.Parameter(
-            torch.randn(self.n_layers, batch_size, self.hidden_size) * 0.1
+            torch.randn(self.n_layers, batch_size, self.hidden_size) * 0.1,
+            device=device,
         )
 
         return (hidden_state, cell_state)
