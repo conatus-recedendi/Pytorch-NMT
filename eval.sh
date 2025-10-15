@@ -20,5 +20,5 @@ python ./src/eval.py \
     --max_len 50 \
     --beam_size 5 \
     --batch_size 1 \
-    --device cpu \
+    --device cuda \
     --seed 19
