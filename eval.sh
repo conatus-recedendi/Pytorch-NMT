@@ -16,7 +16,7 @@ python ./src/eval.py \
     --language de \
     --input_file ./rewrite/test.14.en \
     --input_ref_file ./rewrite/test.14.de \
-    --output_file test.14.hypothesis.de \
+    --output_file test.14.hypothesis.id=10.de \
     --max_len 50 \
     --beam_size 5 \
     --batch_size 1 \
