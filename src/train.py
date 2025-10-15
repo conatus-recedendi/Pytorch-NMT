@@ -138,7 +138,7 @@ def calculate_perplexity(encoder, decoder, test_pairs, criterion, device):
                 input_lang,
                 output_lang,
                 device,
-                is_reverse=False,
+                is_reverse=True,
             )
             # print(type(test_pair_batch), len(test_pair_batch))
 
@@ -497,7 +497,7 @@ for epoch in range(1, args.n_epochs + 1):
         pair_batch = pairs[_ * batch_size : (_ + 1) * batch_size]
         # print(type(pair_batch), len(pair_batch), len(pair_batch[0]))
         training_pair_batch = etl.tensor_from_pair_batch(
-            pair_batch, input_lang, output_lang, device, is_reverse=False
+            pair_batch, input_lang, output_lang, device, is_reverse=True
         )
         # print(type(training_pair_batch), len(training_pair_batch))
         input = torch.stack(training_pair_batch[0])
