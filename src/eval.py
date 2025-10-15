@@ -237,7 +237,7 @@ def greedy_decode(decoder_context, decoder_hidden, encoder_outputs, max_len, tar
         ).item()
         loss += _loss if not math.isnan(_loss) else 0  # or nan
         valid_token += 1 if not math.isnan(_loss) else 0
-        print(loss)
+
         # decoder_attentions[di, : decoder_attention.size(2)] += (
         #     decoder_attention.squeeze(0).squeeze(0).cpu().data
         # )
