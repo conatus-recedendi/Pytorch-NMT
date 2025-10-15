@@ -60,28 +60,19 @@ class AttentionDecoderRNN(nn.Module):
 
     def forward(self, input, decoder_context, hidden_state, encoder_outputs):
 
-        lengths = (input != 2).sum(dim=1).cpu().numpy().tolist()
         # Run through RNN
         input = input.view(1, -1)
         embedded = self.embedding(input)  # [1, -1, embedding_size]
         embedded = self.dropout(embedded)
-        embedded = embedded.transpose(0, 1)  # [len, batch, embedding_size] for LSTM
 
-        # 3. Pack sequences (PAD 무시)
-        packed_embedded = nn.utils.rnn.pack_padded_sequence(
-            embedded, lengths, batch_first=False, enforce_sorted=False
-        )
         # 현 시점에서 LSTM 호출
         # rnn_input = torch.cat(
         #     (embedded, decoder_context), 2
         # )  # [1, -1, embedding_size + hidden_size]
         rnn_output, hidden_state = self.lstm(
-            packed_embedded, hidden_state
+            embedded, hidden_state
         )  # rnn_output: [1, batch, hidden_size]
 
-        rnn_output, _ = nn.utils.rnn.pad_packed_sequence(
-            rnn_output, batch_first=False, padding_value=0.0
-        )
         # Calculate attention
         if self.attn_model == "base":
             # decoder context는 사용하지 않음

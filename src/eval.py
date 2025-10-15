@@ -7,6 +7,8 @@ from topk_decode import TopKDecode
 from encoder import EncoderRNN
 from language import Language
 from beam import Beam
+from torch import nn
+import torch.nn.functional as F
 
 # import numpy as np
 
@@ -116,6 +118,9 @@ def evaluate_sentence(sentence, max_len=10):
     input = etl.tensor_from_sentence(
         input_lang, sentence, device, is_src=True, is_reverse=False
     )
+    target = etl.tensor_from_sentence(
+        output_lang, sentence, device, is_src=False, is_reverse=False
+    )
 
     input_length = input.size()[0]
 
@@ -161,12 +166,12 @@ def evaluate_sentence(sentence, max_len=10):
     # best_beam_sentence = assemble_sentence(best_beam_words)
 
     # Also get greedy translation for comparison
-    greedy_words, greedy_attention = greedy_decode(
-        decoder_context, decoder_hidden, encoder_outputs, max_len
+    greedy_words, greedy_attention, greedy_loss = greedy_decode(
+        decoder_context, decoder_hidden, encoder_outputs, max_len, target
     )
     greedy_sentence = assemble_sentence(greedy_words)
 
-    return greedy_sentence
+    return greedy_sentence, greedy_loss
 
 
 def evaluate_file(input_file_path, input_ref_path, output_file_path=None, max_len=10):
@@ -182,12 +187,18 @@ def evaluate_file(input_file_path, input_ref_path, output_file_path=None, max_le
     # Process each sentence
 
     idx = 0
+    loss = 0
     for sentence in sentences:
+        ref_sentence = ref_sentences[idx] if idx < len(ref_sentences) else None
 
         # normalized_sentence = helpers.normalize_string(sentence)
         # normalized_sentence = [normalized_sentence]
-        greedy_translation = evaluate_sentence(sentence, max_len)
+        greedy_translation, sen_loss = evaluate_sentence(
+            sentence, max_len, ref_sentence
+        )
 
+        loss += sen_loss.item()
+        # print(f"Average loss: {loss/(idx+1):.4f}")
         # Use beam translation as default output
         # print(beam_translation)
 
@@ -198,7 +209,7 @@ def evaluate_file(input_file_path, input_ref_path, output_file_path=None, max_le
         # print(f"base: {greedy_translation}")
         # print("==============================")
         idx += 1
-
+    print(f"Final Average loss: {loss/len(sentences):.4f}")
     # Save results to output file if specified
     if output_file_path:
         with open(output_file_path, "w", encoding="utf-8") as f:
@@ -208,16 +219,18 @@ def evaluate_file(input_file_path, input_ref_path, output_file_path=None, max_le
     return results
 
 
-def greedy_decode(decoder_context, decoder_hidden, encoder_outputs, max_len):
+def greedy_decode(decoder_context, decoder_hidden, encoder_outputs, max_len, targets):
     # Run through decoder
     decoded_words = []
     encoder_len = encoder_outputs.size(0)
     decoder_attentions = torch.zeros(max_len, encoder_len)
     decoder_input = torch.LongTensor(1, 1).fill_(Language.eos_token).to(device)
+    loss = 0
     for di in range(max_len):
         decoder_output, decoder_context, decoder_hidden, decoder_attention = decoder(
             decoder_input, decoder_context, decoder_hidden, encoder_outputs
         )
+        loss += F.nll_loss(decoder_output, targets[di], ignore_index=Language.pad_token)
         # decoder_attentions[di, : decoder_attention.size(2)] += (
         #     decoder_attention.squeeze(0).squeeze(0).cpu().data
         # )
@@ -233,8 +246,8 @@ def greedy_decode(decoder_context, decoder_hidden, encoder_outputs, max_len):
 
         # Next input is chosen word
         decoder_input = topi
-
-    return decoded_words, decoder_attentions[: di + 1, : encoder_outputs.size(0)]
+    loss /= max_len
+    return decoded_words, decoder_attentions[: di + 1, : encoder_outputs.size(0)], loss
 
 
 def beam_decode(decoder_context, decoder_hidden, encoder_outputs, max_len, beam_size=5):
