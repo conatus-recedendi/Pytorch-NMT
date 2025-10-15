@@ -170,9 +170,17 @@ def evaluate_sentence(sentence, ref_sentence, max_len=10):
     greedy_words, greedy_attention, greedy_loss = greedy_decode(
         decoder_context, decoder_hidden, encoder_outputs, max_len, target
     )
+    _, _, ppl_loss = greedy_decode(
+        decoder_context,
+        decoder_hidden,
+        encoder_outputs,
+        max_len,
+        target,
+        is_teaching_force=True,
+    )
     greedy_sentence = assemble_sentence(greedy_words)
 
-    return greedy_sentence, greedy_loss
+    return greedy_sentence, ppl_loss
 
 
 def evaluate_file(input_file_path, input_ref_path, output_file_path=None, max_len=10):
@@ -220,7 +228,14 @@ def evaluate_file(input_file_path, input_ref_path, output_file_path=None, max_le
     return results
 
 
-def greedy_decode(decoder_context, decoder_hidden, encoder_outputs, max_len, targets):
+def greedy_decode(
+    decoder_context,
+    decoder_hidden,
+    encoder_outputs,
+    max_len,
+    targets,
+    is_teaching_force=False,
+):
     # Run through decoder
     decoded_words = []
     encoder_len = encoder_outputs.size(0)
@@ -253,6 +268,8 @@ def greedy_decode(decoder_context, decoder_hidden, encoder_outputs, max_len, tar
 
         # Next input is chosen word
         decoder_input = topi
+        if is_teaching_force:
+            decoder_input = targets[di].view(1, -1)
     loss /= valid_token
     return decoded_words, decoder_attentions[: di + 1, : encoder_outputs.size(0)], loss
 
