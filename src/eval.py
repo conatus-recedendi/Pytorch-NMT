@@ -230,7 +230,10 @@ def greedy_decode(decoder_context, decoder_hidden, encoder_outputs, max_len, tar
         decoder_output, decoder_context, decoder_hidden, decoder_attention = decoder(
             decoder_input, decoder_context, decoder_hidden, encoder_outputs
         )
-        loss += F.nll_loss(decoder_output, targets[di], ignore_index=Language.pad_token)
+        loss += F.nll_loss(
+            decoder_output, targets[di], ignore_index=Language.pad_token
+        ).item()
+        print(loss)
         # decoder_attentions[di, : decoder_attention.size(2)] += (
         #     decoder_attention.squeeze(0).squeeze(0).cpu().data
         # )
