@@ -114,12 +114,12 @@ encoder = encoder.to(device)
 decoder = decoder.to(device)
 
 
-def evaluate_sentence(sentence, max_len=10):
+def evaluate_sentence(sentence, ref_sentence, max_len=10):
     input = etl.tensor_from_sentence(
         input_lang, sentence, device, is_src=True, is_reverse=False
     )
     target = etl.tensor_from_sentence(
-        output_lang, sentence, device, is_src=False, is_reverse=False
+        output_lang, ref_sentence, device, is_src=False, is_reverse=False
     )
 
     input_length = input.size()[0]
@@ -194,7 +194,7 @@ def evaluate_file(input_file_path, input_ref_path, output_file_path=None, max_le
         # normalized_sentence = helpers.normalize_string(sentence)
         # normalized_sentence = [normalized_sentence]
         greedy_translation, sen_loss = evaluate_sentence(
-            sentence, max_len, ref_sentence
+            sentence, ref_sentence, max_len=max_len
         )
 
         loss += sen_loss.item()
