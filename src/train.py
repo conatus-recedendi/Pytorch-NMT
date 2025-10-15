@@ -138,7 +138,7 @@ def calculate_perplexity(encoder, decoder, test_pairs, criterion, device):
                 input_lang,
                 output_lang,
                 device,
-                is_reverse=True,
+                is_reverse=False,
             )
             # print(type(test_pair_batch), len(test_pair_batch))
 
@@ -497,7 +497,7 @@ for epoch in range(1, args.n_epochs + 1):
         pair_batch = pairs[_ * batch_size : (_ + 1) * batch_size]
         # print(type(pair_batch), len(pair_batch), len(pair_batch[0]))
         training_pair_batch = etl.tensor_from_pair_batch(
-            pair_batch, input_lang, output_lang, device, is_reverse=True
+            pair_batch, input_lang, output_lang, device, is_reverse=False
         )
         # print(type(training_pair_batch), len(training_pair_batch))
         input = torch.stack(training_pair_batch[0])
@@ -562,18 +562,20 @@ for epoch in range(1, args.n_epochs + 1):
     plot_loss_total += avg_loss
     # if total_batch_count % 10000 == 0:
     #     # get test perplexity for Figure 5
+    if epoch > 4:
+        id = "id=12_attn=%s,local=%s,dropout=d%.2f,epoch=%d" % (
+            args.attn_model,
+            args.local if args.local else "global",
+            args.dropout,
+            epoch,
+        )
+        # Save our models
+        torch.save(encoder.state_dict(), "./data/encoder_model_{}".format(id))
+        torch.save(decoder.state_dict(), "./data/decoder_model_{}".format(id))
 
-    id = "id=11_attn=%s,local=%s,dropout=d%.2f,epoch=%d" % (
-        args.attn_model,
-        args.local if args.local else "global",
-        args.dropout,
-        epoch,
-    )
-    # Save our models
-    torch.save(encoder.state_dict(), "./data/encoder_model_{}".format(id))
-    torch.save(decoder.state_dict(), "./data/decoder_model_{}".format(id))
-
-    torch.save(decoder.attention.state_dict(), "./data/attention_model_{}".format(id))
+        torch.save(
+            decoder.attention.state_dict(), "./data/attention_model_{}".format(id)
+        )
     if epoch == 0:
         continue
 
