@@ -55,7 +55,7 @@ parser.add_argument(
     "--input_ref_file", type=str, help="input reference file path with target sentences"
 )
 args = parser.parse_args()
-helpers.validate_language_params(args.language)
+# helpers.validate_language_params(args.language)
 
 input_lang, output_lang, pairs = etl.prepare_data(args.language, is_test=True)
 
