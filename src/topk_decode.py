@@ -245,10 +245,13 @@ class TopKDecode(torch.nn.Module):
         if isinstance(nw_hidden[0], tuple):
             # LSTM case: initialize tuple of zeros
             hidden_state, cell_state = nw_hidden[0]
-            h_n = (torch.zeros(hidden_state.size()), torch.zeros(cell_state.size()))
+            h_n = (
+                torch.zeros(hidden_state.size()).to(self.device),
+                torch.zeros(cell_state.size()).to(self.device),
+            )
         else:
             # GRU case: initialize single tensor of zeros
-            h_n = torch.zeros(nw_hidden[0].size())
+            h_n = torch.zeros(nw_hidden[0].size()).to(self.device)
         topk_length = [
             [max_len] * self.beam_size for _ in range(batch_size)
         ]  # Placeholder for lengths of top-beam_size sequences
@@ -342,12 +345,18 @@ class TopKDecode(torch.nn.Module):
                             :, idx[0], :
                         ]
                         current_cell_state[:, res_idx, :] = nw_cell_state[:, idx[0], :]
-                        h_n_state[:, res_idx, :] = nw_hidden_state[:, idx[0], :].data
-                        h_n_cell[:, res_idx, :] = nw_cell_state[:, idx[0], :].data
+                        h_n_state[:, res_idx, :] = nw_hidden_state[
+                            :, idx[0], :
+                        ].data.to(self.device)
+                        h_n_cell[:, res_idx, :] = nw_cell_state[:, idx[0], :].data.to(
+                            self.device
+                        )
                     else:
                         # GRU case: assign single hidden state
                         current_hidden[:, res_idx, :] = nw_hidden[t][:, idx[0], :]
-                        h_n[:, res_idx, :] = nw_hidden[t][:, idx[0], :].data
+                        h_n[:, res_idx, :] = nw_hidden[t][:, idx[0], :].data.to(
+                            self.device
+                        )
 
                     current_symbol[res_idx, :] = symbols[t][idx[0]]
                     score[b_idx, res_k_idx] = scores[t][idx[0]].data[0]
@@ -368,9 +377,11 @@ class TopKDecode(torch.nn.Module):
                 topk_length[b_idx][k_idx.item()] for k_idx in re_sorted_idx[b_idx, :]
             ]
 
-        re_sorted_idx = (re_sorted_idx + self.pos_index.expand_as(re_sorted_idx)).view(
-            batch_size * self.beam_size
-        )
+        re_sorted_idx = (
+            (re_sorted_idx + self.pos_index.expand_as(re_sorted_idx))
+            .view(batch_size * self.beam_size)
+            .to(self.device)
+        )  # Ensure device consistency
 
         # Reverse the sequences and re-order at the same time
         # It is reversed because the backtracking happens in reverse time order
@@ -388,36 +399,40 @@ class TopKDecode(torch.nn.Module):
             if isinstance(step, tuple):
                 # LSTM case: step = (hidden_state, cell_state)
                 hidden_state, cell_state = step
-                hidden_state = hidden_state.index_select(1, re_sorted_idx).view(
+                hidden_state = hidden_state.index_select(1, re_sorted_idx.long()).view(
                     -1, batch_size, self.beam_size, self.hidden_size
                 )
-                cell_state = cell_state.index_select(1, re_sorted_idx).view(
+                cell_state = cell_state.index_select(1, re_sorted_idx.long()).view(
                     -1, batch_size, self.beam_size, self.hidden_size
                 )
                 h_t_processed.append((hidden_state, cell_state))
             else:
                 # GRU case: step is a single tensor
-                processed_step = step.index_select(1, re_sorted_idx).view(
+                processed_step = step.index_select(1, re_sorted_idx.long()).view(
                     -1, batch_size, self.beam_size, self.hidden_size
                 )
                 h_t_processed.append(processed_step)
         h_t = h_t_processed
 
         # Handle LSTM case for final h_n processing
-        re_sorted_idx_data_long = re_sorted_idx.data.long()
         if isinstance(h_n, tuple):
             # LSTM case: process both hidden and cell states
             h_n_state, h_n_cell = h_n
-            h_n_state = h_n_state.index_select(1, re_sorted_idx_data_long).view(
+            # Ensure h_n tensors are on correct device
+            h_n_state = h_n_state.to(self.device)
+            h_n_cell = h_n_cell.to(self.device)
+
+            h_n_state = h_n_state.index_select(1, re_sorted_idx.long()).view(
                 -1, batch_size, self.beam_size, self.hidden_size
             )
-            h_n_cell = h_n_cell.index_select(1, re_sorted_idx_data_long).view(
+            h_n_cell = h_n_cell.index_select(1, re_sorted_idx.long()).view(
                 -1, batch_size, self.beam_size, self.hidden_size
             )
             h_n = (h_n_state, h_n_cell)
         else:
             # GRU case: process single tensor
-            h_n = h_n.index_select(1, re_sorted_idx_data_long).view(
+            h_n = h_n.to(self.device)  # Ensure h_n is on correct device
+            h_n = h_n.index_select(1, re_sorted_idx.long()).view(
                 -1, batch_size, self.beam_size, self.hidden_size
             )
         score = score.data
