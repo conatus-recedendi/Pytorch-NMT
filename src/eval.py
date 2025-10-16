@@ -49,14 +49,19 @@ parser.add_argument(
     "--output_file", type=str, help="output file path for translations (optional)"
 )
 parser.add_argument("--max_len", type=int)
-parser.add_argument("--beam_size", type=int)
-parser.add_argument("--batch_size", type=int)
+parser.add_argument("--beam_size", type=int, default=12)
+parser.add_argument("--batch_size", type=int, default=1)
 parser.add_argument("--device", type=str, help="cpu or cuda")
 parser.add_argument("--seed", type=str, help="random seed")
 parser.add_argument("--local", type=str, help="local-m, local-p, None", default=None)
 parser.add_argument(
     "--input_ref_file", type=str, help="input reference file path with target sentences"
 )
+parser.add_argument(
+    "--reverse", type=bool, help="reverse source sentence", default=False
+)
+parser.add_argument("--clip_forward", type=float, default=50.0)
+parser.add_argument("--clip_backward", type=float, default=1000.0)
 args = parser.parse_args()
 # helpers.validate_language_params(args.language)
 
@@ -76,16 +81,21 @@ encoder = EncoderRNN(
     args.hidden_size,
     args.n_layers,
     args.dropout,
+    args.clip_forward,
+    args.clip_backward,
 )
 
 print(
-    "encoder: n_words=%d, embedding_size=%d, hidden_size=%d, n_layers=%d, dropout=%.2f"
+    "encoder: n_words=%d, embedding_size=%d, hidden_size=%d, n_layers=%d, dropout=%.2f, reverse=%s, clip_forward=%s, clip_backward=%s"
     % (
         input_lang.n_words,
         args.embedding_size,
         args.hidden_size,
         args.n_layers,
         args.dropout,
+        args.reverse,
+        args.clip_forward,
+        args.clip_backward,
     )
 )
 
@@ -98,6 +108,8 @@ decoder = AttentionDecoderRNN(
     args.n_layers,
     args.dropout,
     args.local,
+    args.clip_forward,
+    args.clip_backward,
 )
 
 id = "id=10_attn=%s,local=%s,dropout=d%.2f,epoch=8" % (
@@ -108,7 +120,12 @@ id = "id=10_attn=%s,local=%s,dropout=d%.2f,epoch=8" % (
 # Load model parameters
 encoder.load_state_dict(torch.load("./data/encoder_model_{}".format(id)))
 decoder.load_state_dict(torch.load("./data/decoder_model_{}".format(id)))
-decoder.attention.load_state_dict(torch.load("./data/attention_model_{}".format(id)))
+
+# Only load attention weights if not base model
+if args.attn_model != "base":
+    decoder.attention.load_state_dict(
+        torch.load("./data/attention_model_{}".format(id))
+    )
 
 # Move models to device
 encoder = encoder.to(device)
@@ -138,34 +155,34 @@ def evaluate_sentence(sentence, ref_sentence, max_len=10):
 
     decoder_hidden = encoder_hidden
 
-    # topk_decoder = TopKDecode(
-    #     decoder,
-    #     decoder.hidden_size,
-    #     args.beam_size,
-    #     output_lang.n_words,
-    #     Language.sos_token,
-    #     Language.eos_token,
-    #     device,
-    # )
-    # topk_decoder = topk_decoder.to(device)
+    # Beam search decode
+    topk_decoder = TopKDecode(
+        decoder,
+        decoder.hidden_size,
+        args.beam_size,
+        output_lang.n_words,
+        Language.sos_token,
+        Language.eos_token,
+        device,
+    )
+    topk_decoder = topk_decoder.to(device)
 
-    # decoder_outputs, _, metadata = topk_decoder(
-    #     decoder_context,
-    #     decoder_hidden,
-    #     encoder_outputs,
-    #     args.max_len,
-    #     args.batch_size,
-    # )
+    decoder_outputs, _, metadata = topk_decoder(
+        decoder_context,
+        decoder_hidden,
+        encoder_outputs,
+        args.max_len,
+        args.batch_size,
+    )
 
-    # beam_words = torch.stack(metadata["topk_sequence"], dim=0)
-    # #  print(beam_words.shape)
-    # beam_words = beam_words.squeeze(3).squeeze(1).transpose(0, 1)
-    # beam_length = metadata["topk_length"]
+    beam_words = torch.stack(metadata["topk_sequence"], dim=0)
+    beam_words = beam_words.squeeze(3).squeeze(1).transpose(0, 1)
+    beam_length = metadata["topk_length"]
 
-    # # Get best beam translation
-    # best_beam_ids = beam_words[0][: beam_length[0][0]]
-    # best_beam_words = [output_lang.index2word[id] for id in best_beam_ids.tolist()]
-    # best_beam_sentence = assemble_sentence(best_beam_words)
+    # Get best beam translation
+    best_beam_ids = beam_words[0][: beam_length[0][0]]
+    best_beam_words = [output_lang.index2word[id] for id in best_beam_ids.tolist()]
+    best_beam_sentence = assemble_sentence(best_beam_words)
 
     # Also get greedy translation for comparison
     greedy_words, greedy_attention, greedy_loss = greedy_decode(
@@ -181,7 +198,7 @@ def evaluate_sentence(sentence, ref_sentence, max_len=10):
     )
     greedy_sentence = assemble_sentence(greedy_words)
 
-    return greedy_sentence, ppl_loss, ref_pad_cnt
+    return best_beam_sentence, greedy_sentence, ppl_loss, ref_pad_cnt
 
 
 def evaluate_file(input_file_path, input_ref_path, output_file_path=None, max_len=10):
@@ -204,7 +221,7 @@ def evaluate_file(input_file_path, input_ref_path, output_file_path=None, max_le
 
         # normalized_sentence = helpers.normalize_string(sentence)
         # normalized_sentence = [normalized_sentence]
-        greedy_translation, sen_loss, ref_pad_cnt = evaluate_sentence(
+        beam_translation, greedy_translation, sen_loss, ref_pad_cnt = evaluate_sentence(
             sentence, ref_sentence, max_len=max_len
         )
         ref_pad_cnt_total += ref_pad_cnt
@@ -214,19 +231,35 @@ def evaluate_file(input_file_path, input_ref_path, output_file_path=None, max_le
         # Use beam translation as default output
         # print(beam_translation)
 
-        results.append({"source": sentence, "greedy": greedy_translation})
+        results.append(
+            {"source": sentence, "beam": beam_translation, "greedy": greedy_translation}
+        )
         print(f"{idx}/{len(sentences)}")
-        # print(f"src: {sentence}")
-        # print(f"best: {ref_sentences[idx]}")
-        # print(f"base: {greedy_translation}")
-        # print("==============================")
+        if idx % 100 == 0:  # Print samples every 100 sentences
+            print(f"src: {sentence}")
+            print(f"ref: {ref_sentences[idx]}")
+            print(f"beam: {beam_translation}")
+            print(f"greedy: {greedy_translation}")
+            print("=" * 50)
         idx += 1
     print(f"Final Average loss: {loss/len(sentences):.4f}")
+    print(f"Final Perplexity: {math.exp(loss/len(sentences)):.2f}")
+
     # Save results to output file if specified
     if output_file_path:
+        # Save beam search results as main output
         with open(output_file_path, "w", encoding="utf-8") as f:
             for result in results:
+                f.write(f"{result['beam']}\n")
+
+        # Save greedy results to separate file
+        greedy_output_path = output_file_path.replace(".txt", "_greedy.txt")
+        with open(greedy_output_path, "w", encoding="utf-8") as f:
+            for result in results:
                 f.write(f"{result['greedy']}\n")
+
+        print(f"Beam search results saved to: {output_file_path}")
+        print(f"Greedy search results saved to: {greedy_output_path}")
 
     print("Total PAD in reference: ", ref_pad_cnt_total)
     return results
@@ -244,7 +277,9 @@ def greedy_decode(
     decoded_words = []
     encoder_len = encoder_outputs.size(0)
     decoder_attentions = torch.zeros(max_len, encoder_len)
-    decoder_input = torch.LongTensor(1, 1).fill_(Language.eos_token).to(device)
+    decoder_input = (
+        torch.LongTensor(1, 1).fill_(Language.sos_token).to(device)
+    )  # Use SOS token
     loss = 0
     valid_token = 0
     for di in range(max_len):
@@ -287,12 +322,12 @@ def greedy_decode(
 
 
 def beam_decode(decoder_context, decoder_hidden, encoder_outputs, max_len, beam_size=5):
-    batch_size = args.beam_size
+    batch_size = 1  # Single sentence evaluation
     vocab_size = output_lang.n_words
     # [1, batch_size x beam_size]
     decoder_input = (
         torch.ones(batch_size * beam_size, dtype=torch.long, device=device)
-        * Language.eos_token
+        * Language.sos_token  # Use SOS token
     )
 
     # [num_layers, batch_size x beam_size, hidden_size]

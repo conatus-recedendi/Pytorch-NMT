@@ -61,6 +61,8 @@ parser.add_argument("--local", type=str, help="local-m, local-p, None", default=
 parser.add_argument(
     "--reverse", type=bool, help="reverse source sentence", default=False
 )
+parser.add_argument("--clip_forward", type=float, default=50.0)
+parser.add_argument("--clip_backward", type=float, default=1000.0)
 args = parser.parse_args()
 
 print(sys.argv)
@@ -373,6 +375,8 @@ encoder = EncoderRNN(
     args.hidden_size,
     args.n_layers,
     args.dropout,
+    args.clip_forward,
+    args.clip_backward,
 )
 
 decoder = AttentionDecoderRNN(
@@ -384,6 +388,8 @@ decoder = AttentionDecoderRNN(
     args.n_layers,
     args.dropout,
     args.local,
+    args.clip_forward,
+    args.clip_backward,
 )
 # Move models to device
 encoder = encoder.to(device)

@@ -18,7 +18,7 @@ python ./src/eval.py \
     --input_ref_file ./rewrite/test.14.de \
     --output_file test.14.hypothesis.id=10.de \
     --max_len 50 \
-    --beam_size 5 \
+    --beam_size 12 \
     --batch_size 1 \
     --device cuda \
     --seed 19
