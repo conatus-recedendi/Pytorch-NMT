@@ -404,19 +404,20 @@ class TopKDecode(torch.nn.Module):
         h_t = h_t_processed
 
         # Handle LSTM case for final h_n processing
+        re_sorted_idx_data_long = re_sorted_idx.data.long()
         if isinstance(h_n, tuple):
             # LSTM case: process both hidden and cell states
             h_n_state, h_n_cell = h_n
-            h_n_state = h_n_state.index_select(1, re_sorted_idx.data.long()).view(
+            h_n_state = h_n_state.index_select(1, re_sorted_idx_data_long).view(
                 -1, batch_size, self.beam_size, self.hidden_size
             )
-            h_n_cell = h_n_cell.index_select(1, re_sorted_idx.data.long()).view(
+            h_n_cell = h_n_cell.index_select(1, re_sorted_idx_data_long).view(
                 -1, batch_size, self.beam_size, self.hidden_size
             )
             h_n = (h_n_state, h_n_cell)
         else:
             # GRU case: process single tensor
-            h_n = h_n.index_select(1, re_sorted_idx.data.long()).view(
+            h_n = h_n.index_select(1, re_sorted_idx_data_long).view(
                 -1, batch_size, self.beam_size, self.hidden_size
             )
         score = score.data
