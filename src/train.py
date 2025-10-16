@@ -480,7 +480,9 @@ for epoch in range(1, args.n_epochs + 1):
             total_data = (len(pairs) // batch_size) * args.n_epochs
             processed_data = (_ + 1) + (epoch - 1) * (len(pairs) // batch_size)
 
-            expected_time_sec = (time.time() - start) * (total_data / processed_data)
+            expected_time_sec = (time.time() - start) * (
+                total_data / processed_data - 1
+            )
             expected_time_str = helpers.format_time(expected_time_sec)
             print(
                 "%cEpoch: %d/%d, Batch: %d, Loss: %f, Progress: %f%%, Expected Time: %s"
