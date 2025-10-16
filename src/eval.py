@@ -156,42 +156,33 @@ def evaluate_sentence(sentence, ref_sentence, max_len=10):
     decoder_hidden = encoder_hidden
 
     # Beam search decode
-    try:
-        topk_decoder = TopKDecode(
-            decoder,
-            decoder.hidden_size,
-            args.beam_size,
-            output_lang.n_words,
-            Language.sos_token,
-            Language.eos_token,
-            device,
-        )
-        topk_decoder = topk_decoder.to(device)
+    topk_decoder = TopKDecode(
+        decoder,
+        decoder.hidden_size,
+        args.beam_size,
+        output_lang.n_words,
+        Language.sos_token,
+        Language.eos_token,
+        device,
+    )
+    topk_decoder = topk_decoder.to(device)
 
-        decoder_outputs, _, metadata = topk_decoder(
-            decoder_context,
-            decoder_hidden,
-            encoder_outputs,
-            args.max_len,
-            args.batch_size,
-        )
+    decoder_outputs, _, metadata = topk_decoder(
+        decoder_context,
+        decoder_hidden,
+        encoder_outputs,
+        args.max_len,
+        args.batch_size,
+    )
 
-        beam_words = torch.stack(metadata["topk_sequence"], dim=0)
-        beam_words = beam_words.squeeze(3).squeeze(1).transpose(0, 1)
-        beam_length = metadata["topk_length"]
+    beam_words = torch.stack(metadata["topk_sequence"], dim=0)
+    beam_words = beam_words.squeeze(3).squeeze(1).transpose(0, 1)
+    beam_length = metadata["topk_length"]
 
-        # Get best beam translation
-        best_beam_ids = beam_words[0][: beam_length[0][0]]
-        best_beam_words = [output_lang.index2word[id] for id in best_beam_ids.tolist()]
-        best_beam_sentence = assemble_sentence(best_beam_words)
-    except RuntimeError as e:
-        print(f"Beam search failed: {e}")
-        print("Falling back to greedy decode for beam search...")
-        # Fallback to greedy decode if beam search fails
-        fallback_words, _, _ = greedy_decode(
-            decoder_context, decoder_hidden, encoder_outputs, max_len, target
-        )
-        best_beam_sentence = assemble_sentence(fallback_words)
+    # Get best beam translation
+    best_beam_ids = beam_words[0][: beam_length[0][0]]
+    best_beam_words = [output_lang.index2word[id] for id in best_beam_ids.tolist()]
+    best_beam_sentence = assemble_sentence(best_beam_words)
 
     # Also get greedy translation for comparison
     greedy_words, greedy_attention, greedy_loss = greedy_decode(
@@ -285,30 +276,23 @@ def greedy_decode(
     # Run through decoder
     decoded_words = []
     encoder_len = encoder_outputs.size(0)
-    decoder_attentions = torch.zeros(max_len, encoder_len, device=device)  # Ensure device
+    decoder_attentions = torch.zeros(max_len, encoder_len)
     decoder_input = (
         torch.LongTensor(1, 1).fill_(Language.sos_token).to(device)
     )  # Use SOS token
     loss = 0
     valid_token = 0
     for di in range(max_len):
-        if di >= len(targets):  # Safety check for target length
-            break
-            
         decoder_output, decoder_context, decoder_hidden, decoder_attention = decoder(
             decoder_input, decoder_context, decoder_hidden, encoder_outputs
         )
-        
-        # Ensure targets are on correct device
-        current_target = targets[di].to(device) if hasattr(targets[di], 'to') else targets[di]
-        mask = current_target != Language.pad_token
+        mask = targets[di] != Language.pad_token
         decoder_output = decoder_output[mask]
-        
         if decoder_output.size(0) == 0:
             break
         # decoder_output = decoder_output.squeeze(0)  # [1, batch, vocab] -> [batch, vocab]
         _loss = F.nll_loss(
-            decoder_output, current_target[mask], ignore_index=Language.pad_token
+            decoder_output, targets[di][mask], ignore_index=Language.pad_token
         ).item()
         # _loss = F.nll_loss(
         #     decoder_output, targets[di], ignore_index=Language.pad_token
@@ -332,7 +316,7 @@ def greedy_decode(
         # Next input is chosen word
         decoder_input = topi
         if is_teaching_force:
-            decoder_input = current_target.view(1, -1)
+            decoder_input = targets[di].view(1, -1)
     loss /= valid_token
     return decoded_words, decoder_attentions[: di + 1, : encoder_outputs.size(0)], loss
 
