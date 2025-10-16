@@ -22,4 +22,5 @@ OMP_NUM_THREADS=20 MKL_NUM_THREADS=20 python src/train.py \
     --language de \
     --device cuda \
     --seed 19 \
-    --batch_size 128
+    --batch_size 128 \
+    --reverse True
