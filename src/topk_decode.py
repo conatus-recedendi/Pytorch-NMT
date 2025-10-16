@@ -57,6 +57,7 @@ class TopKDecode(torch.nn.Module):
         encoder_outputs=None,
         max_len=10,
         batch_size=1,
+        targets=None,  # Add targets for loss calculation
     ):
 
         # [batch_size * beam_size, 1]
@@ -111,7 +112,12 @@ class TopKDecode(torch.nn.Module):
         stored_emitted_symbols = list()
         stored_hidden = list()
 
-        for _ in range(0, max_len):
+        # Loss calculation variables
+        total_loss = 0.0
+        valid_tokens = 0
+        use_loss_calculation = targets is not None and targets.numel() > 0
+
+        for step_idx in range(0, max_len):
             # output: [batch_size * beam_size, vocab_size]
             #  print(decoder_input.shape)
             #  print(decoder_context.shape)
@@ -122,6 +128,33 @@ class TopKDecode(torch.nn.Module):
             )
 
             stored_outputs.append(output)
+
+            # Calculate loss if targets are provided (teacher forcing style)
+            if use_loss_calculation and step_idx < targets.size(0):
+                # Get the best beam prediction for loss calculation
+                current_target = targets[step_idx].to(self.device)
+                if current_target.item() != 2:  # Not PAD token
+                    # Use the first beam's output for loss calculation
+                    first_beam_output = output[:batch_size]  # [batch_size, vocab_size]
+                    target_expanded = current_target.expand(batch_size)
+
+                    try:
+                        import torch.nn.functional as F
+
+                        step_loss = F.nll_loss(
+                            first_beam_output,
+                            target_expanded,
+                            ignore_index=2,
+                            reduction="sum",
+                        ).item()
+
+                        if not torch.isnan(torch.tensor(step_loss)) and not torch.isinf(
+                            torch.tensor(step_loss)
+                        ):
+                            total_loss += step_loss
+                            valid_tokens += batch_size
+                    except Exception:
+                        pass  # Skip if loss calculation fails
 
             # To get the full sequence scores for the new candidates, add the local
             # scores for t_i to the predecessor scores for t_(i-1)
@@ -210,6 +243,11 @@ class TopKDecode(torch.nn.Module):
         metadata["topk_sequence"] = topk_sequence
         metadata["length"] = [seq_len[0] for seq_len in topk_length]
         metadata["sequence"] = [seq[0] for seq in topk_sequence]
+
+        # Add loss to metadata
+        avg_loss = total_loss / valid_tokens if valid_tokens > 0 else float("inf")
+        metadata["loss"] = avg_loss
+
         return decoder_outputs, decoder_hidden, metadata
 
     def _backtrack(

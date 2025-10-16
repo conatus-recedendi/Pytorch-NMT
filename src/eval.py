@@ -173,16 +173,18 @@ def evaluate_sentence(sentence, ref_sentence, max_len=10):
         encoder_outputs,
         args.max_len,
         args.batch_size,
+        targets=target,  # Pass targets for loss calculation
     )
 
     beam_words = torch.stack(metadata["topk_sequence"], dim=0)
     beam_words = beam_words.squeeze(3).squeeze(1).transpose(0, 1)
     beam_length = metadata["topk_length"]
 
-    # Get best beam translation
+    # Get best beam translation and loss
     best_beam_ids = beam_words[0][: beam_length[0][0]]
     best_beam_words = [output_lang.index2word[id] for id in best_beam_ids.tolist()]
     best_beam_sentence = assemble_sentence(best_beam_words)
+    beam_loss = metadata.get("loss", float("inf"))
 
     # Also get greedy translation for comparison
     greedy_words, greedy_attention, greedy_loss = greedy_decode(
@@ -198,7 +200,7 @@ def evaluate_sentence(sentence, ref_sentence, max_len=10):
     )
     greedy_sentence = assemble_sentence(greedy_words)
 
-    return best_beam_sentence, greedy_sentence, ppl_loss, ref_pad_cnt
+    return best_beam_sentence, greedy_sentence, ppl_loss, beam_loss, ref_pad_cnt
 
 
 def evaluate_file(input_file_path, input_ref_path, output_file_path=None, max_len=10):
@@ -215,18 +217,20 @@ def evaluate_file(input_file_path, input_ref_path, output_file_path=None, max_le
 
     idx = 0
     loss = 0
+    beam_loss_total = 0
     ref_pad_cnt_total = 0
     for sentence in sentences:
         ref_sentence = ref_sentences[idx] if idx < len(ref_sentences) else None
 
         # normalized_sentence = helpers.normalize_string(sentence)
         # normalized_sentence = [normalized_sentence]
-        beam_translation, greedy_translation, sen_loss, ref_pad_cnt = evaluate_sentence(
-            sentence, ref_sentence, max_len=max_len
+        beam_translation, greedy_translation, sen_loss, beam_loss, ref_pad_cnt = (
+            evaluate_sentence(sentence, ref_sentence, max_len=max_len)
         )
         ref_pad_cnt_total += ref_pad_cnt
 
         loss += sen_loss
+        beam_loss_total += beam_loss
         # print(f"Average loss: {loss/(idx+1):.4f}")
         # Use beam translation as default output
         # print(beam_translation)
@@ -242,8 +246,10 @@ def evaluate_file(input_file_path, input_ref_path, output_file_path=None, max_le
             print(f"greedy: {greedy_translation}")
             print("=" * 50)
         idx += 1
-    print(f"Final Average loss: {loss/len(sentences):.4f}")
-    print(f"Final Perplexity: {math.exp(loss/len(sentences)):.2f}")
+    print(f"Final Average Greedy Loss: {loss/len(sentences):.4f}")
+    print(f"Final Greedy Perplexity: {math.exp(loss/len(sentences)):.2f}")
+    print(f"Final Average Beam Loss: {beam_loss_total/len(sentences):.4f}")
+    print(f"Final Beam Perplexity: {math.exp(beam_loss_total/len(sentences)):.2f}")
 
     # Save results to output file if specified
     if output_file_path:
