@@ -253,7 +253,8 @@ def greedy_decode(
         )
         mask = targets[di] != Language.pad_token
         decoder_output = decoder_output[mask]
-
+        if decoder_output.size(0) == 0:
+            break
         # decoder_output = decoder_output.squeeze(0)  # [1, batch, vocab] -> [batch, vocab]
         _loss = F.nll_loss(
             decoder_output, targets[di][mask], ignore_index=Language.pad_token
@@ -268,7 +269,6 @@ def greedy_decode(
         # decoder_attentions[di, : decoder_attention.size(2)] += (
         #     decoder_attention.squeeze(0).squeeze(0).cpu().data
         # )
-
         # Choose top word from output
         topv, topi = decoder_output.data.topk(1, dim=1)
         ni = topi.item()
