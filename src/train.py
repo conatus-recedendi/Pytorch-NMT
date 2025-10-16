@@ -58,6 +58,9 @@ parser.add_argument("--device", type=str, help="cpu or cuda")
 parser.add_argument("--seed", type=str, help="random seed")
 parser.add_argument("--batch_size", type=int, help="batch size")
 parser.add_argument("--local", type=str, help="local-m, local-p, None", default=None)
+parser.add_argument(
+    "--reverse", type=bool, help="reverse source sentence", default=False
+)
 args = parser.parse_args()
 
 print(sys.argv)
@@ -138,7 +141,7 @@ def calculate_perplexity(encoder, decoder, test_pairs, criterion, device):
                 input_lang,
                 output_lang,
                 device,
-                is_reverse=True,
+                is_reverse=args.reverse,
             )
             # print(type(test_pair_batch), len(test_pair_batch))
 
@@ -497,7 +500,7 @@ for epoch in range(1, args.n_epochs + 1):
         pair_batch = pairs[_ * batch_size : (_ + 1) * batch_size]
         # print(type(pair_batch), len(pair_batch), len(pair_batch[0]))
         training_pair_batch = etl.tensor_from_pair_batch(
-            pair_batch, input_lang, output_lang, device, is_reverse=True
+            pair_batch, input_lang, output_lang, device, is_reverse=args.reverse
         )
         # print(type(training_pair_batch), len(training_pair_batch))
         input = torch.stack(training_pair_batch[0])
@@ -563,7 +566,7 @@ for epoch in range(1, args.n_epochs + 1):
     # if total_batch_count % 10000 == 0:
     #     # get test perplexity for Figure 5
     if epoch > 4:
-        id = "id=12_attn=%s,local=%s,dropout=d%.2f,epoch=%d" % (
+        id = "id=13_attn=%s,local=%s,dropout=d%.2f,epoch=%d" % (
             args.attn_model,
             args.local if args.local else "global",
             args.dropout,
