@@ -66,8 +66,16 @@ class EncoderRNN(nn.Module):
         packed_output, hidden_state = self.rnn(packed_embedded, hidden_state)
 
         if self.clip_forward is not None:
-            hidden_state[0] = torch.clamp(hidden_state[0], max=self.clip_forward)
-            hidden_state[1] = torch.clamp(hidden_state[1], max=self.clip_forward)
+            # LSTM hidden_state is (hidden, cell) tuple
+            # Apply clipping to both hidden state and cell state
+            hidden_state = (
+                torch.clamp(
+                    hidden_state[0], min=-self.clip_forward, max=self.clip_forward
+                ),
+                torch.clamp(
+                    hidden_state[1], min=-self.clip_forward, max=self.clip_forward
+                ),
+            )
 
         # output, hidden_state = self.rnn(
         #     embedded, hidden_state
