@@ -92,9 +92,10 @@ class TopKDecode(torch.nn.Module):
         # ignore the inflated copies to avoid duplicate entries in the top beam_size
         sequence_scores = torch.Tensor(batch_size * self.beam_size, 1).to(self.device)
         sequence_scores.fill_(-float("Inf"))
-        sequence_scores.index_fill_(
-            0, torch.LongTensor([i * self.beam_size for i in range(0, batch_size)]), 0.0
-        )
+        fill_tensor = torch.LongTensor(
+            [i * self.beam_size for i in range(0, batch_size)]
+        ).to(self.device)
+        sequence_scores.index_fill_(0, fill_tensor, 0.0)
 
         # Initialize the decoder_input vector
         decoder_input = torch.LongTensor(
