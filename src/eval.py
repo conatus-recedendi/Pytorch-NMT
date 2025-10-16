@@ -122,6 +122,7 @@ def evaluate_sentence(sentence, ref_sentence, max_len=10):
     target = etl.tensor_from_sentence(
         output_lang, ref_sentence, device, is_src=False, is_reverse=False
     )
+    ref_pad_cnt = (target == Language.pad_token).sum().item()
 
     input_length = input.size()[0]
 
@@ -180,7 +181,7 @@ def evaluate_sentence(sentence, ref_sentence, max_len=10):
     )
     greedy_sentence = assemble_sentence(greedy_words)
 
-    return greedy_sentence, ppl_loss
+    return greedy_sentence, ppl_loss, ref_pad_cnt
 
 
 def evaluate_file(input_file_path, input_ref_path, output_file_path=None, max_len=10):
@@ -197,14 +198,16 @@ def evaluate_file(input_file_path, input_ref_path, output_file_path=None, max_le
 
     idx = 0
     loss = 0
+    ref_pad_cnt_total = 0
     for sentence in sentences:
         ref_sentence = ref_sentences[idx] if idx < len(ref_sentences) else None
 
         # normalized_sentence = helpers.normalize_string(sentence)
         # normalized_sentence = [normalized_sentence]
-        greedy_translation, sen_loss = evaluate_sentence(
+        greedy_translation, sen_loss, ref_pad_cnt = evaluate_sentence(
             sentence, ref_sentence, max_len=max_len
         )
+        ref_pad_cnt_total += ref_pad_cnt
 
         loss += sen_loss
         # print(f"Average loss: {loss/(idx+1):.4f}")
@@ -225,6 +228,7 @@ def evaluate_file(input_file_path, input_ref_path, output_file_path=None, max_le
             for result in results:
                 f.write(f"{result['greedy']}\n")
 
+    print("Total PAD in reference: ", ref_pad_cnt_total)
     return results
 
 
@@ -250,6 +254,7 @@ def greedy_decode(
         _loss = F.nll_loss(
             decoder_output, targets[di], ignore_index=Language.pad_token
         ).item()
+
         loss += _loss / decoder_output.size(0) if not math.isnan(_loss) else 0  # or nan
         valid_token += 1 if not math.isnan(_loss) else 0
 
