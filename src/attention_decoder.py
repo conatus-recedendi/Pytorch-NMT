@@ -17,6 +17,8 @@ class AttentionDecoderRNN(nn.Module):
         n_layers=1,
         dropout=0.1,
         local=None,
+        clip_forward=None,
+        clip_backward=None,
     ):
         super(AttentionDecoderRNN, self).__init__()
         self.batch_size = batch_size
@@ -27,6 +29,8 @@ class AttentionDecoderRNN(nn.Module):
         self.n_layers = n_layers
         self.dropout = dropout
         self.local = local  # For local attention
+        self.clip_forward = clip_forward
+        self.clip_backward = clip_backward
 
         # Define layers
         self.embedding = nn.Embedding(tgt_vocab_size, embedding_size)
@@ -72,6 +76,9 @@ class AttentionDecoderRNN(nn.Module):
         rnn_output, hidden_state = self.lstm(
             embedded, hidden_state
         )  # rnn_output: [1, batch, hidden_size]
+        if self.clip_forward is not None:
+            hidden_state[0] = torch.clamp(hidden_state[0], max=self.clip_forward)
+            hidden_state[1] = torch.clamp(hidden_state[1], max=self.clip_forward)
 
         # Calculate attention
         if self.attn_model == "base":

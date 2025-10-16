@@ -13,6 +13,8 @@ class EncoderRNN(nn.Module):
         hidden_size,
         n_layers=1,
         dropout=0.1,
+        clip_forward=None,
+        clip_backward=None,
     ):
         super(EncoderRNN, self).__init__()
         self.batch_size = batch_size
@@ -20,6 +22,8 @@ class EncoderRNN(nn.Module):
         self.embedding_size = embedding_size
         self.hidden_size = hidden_size
         self.n_layers = n_layers
+        self.clip_forward = clip_forward
+        self.clip_backward = clip_backward
 
         self.embedding = nn.Embedding(src_vocab_size, embedding_size, padding_idx=2)
         self.dropout = nn.Dropout(dropout)
@@ -61,6 +65,10 @@ class EncoderRNN(nn.Module):
         # 4. RNN 처리 (PAD가 hidden state에 영향 안줌)
         packed_output, hidden_state = self.rnn(packed_embedded, hidden_state)
 
+        if self.clip_forward is not None:
+            hidden_state[0] = torch.clamp(hidden_state[0], max=self.clip_forward)
+            hidden_state[1] = torch.clamp(hidden_state[1], max=self.clip_forward)
+
         # output, hidden_state = self.rnn(
         #     embedded, hidden_state
         # )  # hidden_state is (h_n, c_n) tuple
@@ -69,6 +77,8 @@ class EncoderRNN(nn.Module):
         output, _ = nn.utils.rnn.pad_packed_sequence(
             packed_output, batch_first=False, padding_value=0.0
         )
+        # output, (h_n, c_n) = super().forward(input, hx)
+
         return output, hidden_state
 
     def init_hidden(self, device, actual_batch_size=None):
