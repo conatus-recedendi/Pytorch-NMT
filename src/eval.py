@@ -251,9 +251,16 @@ def greedy_decode(
         decoder_output, decoder_context, decoder_hidden, decoder_attention = decoder(
             decoder_input, decoder_context, decoder_hidden, encoder_outputs
         )
+        mask = targets[di] != Language.pad_token
+        decoder_output = decoder_output[mask]
+
+        # decoder_output = decoder_output.squeeze(0)  # [1, batch, vocab] -> [batch, vocab]
         _loss = F.nll_loss(
-            decoder_output, targets[di], ignore_index=Language.pad_token
+            decoder_output, targets[di][mask], ignore_index=Language.pad_token
         ).item()
+        # _loss = F.nll_loss(
+        #     decoder_output, targets[di], ignore_index=Language.pad_token
+        # ).item()
 
         loss += _loss / decoder_output.size(0) if not math.isnan(_loss) else 0  # or nan
         valid_token += 1 if not math.isnan(_loss) else 0
