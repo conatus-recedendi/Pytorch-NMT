@@ -167,26 +167,26 @@ def evaluate_sentence(sentence, ref_sentence, max_len=10):
     )
     topk_decoder = topk_decoder.to(device)
 
-    decoder_outputs, _, metadata = topk_decoder(
-        decoder_context,
-        decoder_hidden,
-        encoder_outputs,
-        args.max_len,
-        args.batch_size,
-        targets=target,  # Pass targets for loss calculation
-    )
+    # decoder_outputs, _, metadata = topk_decoder(
+    #     decoder_context,
+    #     decoder_hidden,
+    #     encoder_outputs,
+    #     args.max_len,
+    #     args.batch_size,
+    #     targets=target,  # Pass targets for loss calculation
+    # )
 
-    beam_words = torch.stack(metadata["topk_sequence"], dim=0)
-    beam_words = beam_words.squeeze(3).squeeze(1).transpose(0, 1)
-    beam_length = metadata["topk_length"]
+    # beam_words = torch.stack(metadata["topk_sequence"], dim=0)
+    # beam_words = beam_words.squeeze(3).squeeze(1).transpose(0, 1)
+    # beam_length = metadata["topk_length"]
 
-    # Get best beam translation and loss
-    best_beam_ids = beam_words[0][: beam_length[0][0]]
-    best_beam_words = [output_lang.index2word[id] for id in best_beam_ids.tolist()]
-    best_beam_sentence = assemble_sentence(best_beam_words)
-    beam_loss = metadata.get("loss", float("inf"))
+    # # Get best beam translation and loss
+    # best_beam_ids = beam_words[0][: beam_length[0][0]]
+    # best_beam_words = [output_lang.index2word[id] for id in best_beam_ids.tolist()]
+    # best_beam_sentence = assemble_sentence(best_beam_words)
+    # beam_loss = metadata.get("loss", float("inf"))
 
-    # Also get greedy translation for comparison
+    # # Also get greedy translation for comparison
     greedy_words, greedy_attention, greedy_loss = greedy_decode(
         decoder_context, decoder_hidden, encoder_outputs, max_len, target
     )
@@ -200,7 +200,8 @@ def evaluate_sentence(sentence, ref_sentence, max_len=10):
     )
     greedy_sentence = assemble_sentence(greedy_words)
 
-    return best_beam_sentence, greedy_sentence, ppl_loss, beam_loss, ref_pad_cnt
+    # return best_beam_sentence, greedy_sentence, ppl_loss, beam_loss, ref_pad_cnt
+    return None, greedy_sentence, ppl_loss, None, ref_pad_cnt
 
 
 def evaluate_file(input_file_path, input_ref_path, output_file_path=None, max_len=10):
@@ -230,42 +231,42 @@ def evaluate_file(input_file_path, input_ref_path, output_file_path=None, max_le
         ref_pad_cnt_total += ref_pad_cnt
 
         loss += sen_loss
-        beam_loss_total += beam_loss
+        # beam_loss_total += beam_loss
         # print(f"Average loss: {loss/(idx+1):.4f}")
         # Use beam translation as default output
         # print(beam_translation)
 
-        results.append(
-            {"source": sentence, "beam": beam_translation, "greedy": greedy_translation}
-        )
-        print(f"{idx}/{len(sentences)}")
+        # results.append(
+        #     {"source": sentence, "beam": beam_translation, "greedy": greedy_translation}
+        # )
+        results.append({"source": sentence, "greedy": greedy_translation})
         if idx % 100 == 0:  # Print samples every 100 sentences
-            print(f"src: {sentence}")
-            print(f"ref: {ref_sentences[idx]}")
-            print(f"beam: {beam_translation}")
-            print(f"greedy: {greedy_translation}")
-            print("=" * 50)
+            print(f"{idx}/{len(sentences)}")
+            # print(f"src: {sentence}")
+            # print(f"ref: {ref_sentences[idx]}")
+            # print(f"beam: {beam_translation}")
+            # print(f"greedy: {greedy_translation}")
+            # print("=" * 50)
         idx += 1
     print(f"Final Average Greedy Loss: {loss/len(sentences):.4f}")
     print(f"Final Greedy Perplexity: {math.exp(loss/len(sentences)):.2f}")
-    print(f"Final Average Beam Loss: {beam_loss_total/len(sentences):.4f}")
-    print(f"Final Beam Perplexity: {math.exp(beam_loss_total/len(sentences)):.2f}")
+    # print(f"Final Average Beam Loss: {beam_loss_total/len(sentences):.4f}")
+    # print(f"Final Beam Perplexity: {math.exp(beam_loss_total/len(sentences)):.2f}")
 
     # Save results to output file if specified
     if output_file_path:
-        # Save beam search results as main output
         with open(output_file_path, "w", encoding="utf-8") as f:
-            for result in results:
-                f.write(f"{result['beam']}\n")
-
-        # Save greedy results to separate file
-        greedy_output_path = output_file_path.replace(".txt", "_greedy.txt")
-        with open(greedy_output_path, "w", encoding="utf-8") as f:
             for result in results:
                 f.write(f"{result['greedy']}\n")
 
-        print(f"Beam search results saved to: {output_file_path}")
-        print(f"Greedy search results saved to: {greedy_output_path}")
+        # Save greedy results to separate file
+        # greedy_output_path = output_file_path.replace(".txt", "_greedy.txt")
+        # with open(greedy_output_path, "w", encoding="utf-8") as f:
+        #     for result in results:
+        #         f.write(f"{result['greedy']}\n")
+
+        print(f"Greedy search results saved to: {output_file_path}")
+        # print(f"Greedy search results saved to: {greedy_output_path}")
 
     print("Total PAD in reference: ", ref_pad_cnt_total)
     return results
