@@ -256,8 +256,10 @@ def evaluate_file(input_file_path, input_ref_path, output_file_path=None, max_le
             # print("=" * 50)
         idx += 1
     loss /= total_token
-    print(f"Final Average Greedy Loss: {loss/len(sentences):.4f}")
-    print(f"Final Greedy Perplexity: {math.exp(loss/len(sentences)):.2f}")
+    # print(f"Final Average Greedy Loss: {loss/len(sentences):.4f}")
+    print(f"Final Average Greedy Loss: {loss:.4f}")
+    # print(f"Final Greedy Perplexity: {math.exp(loss/len(sentences)):.2f}")
+    print(f"Final Greedy Perplexity: {math.exp(loss):.2f}")
     # print(f"Final Average Beam Loss: {beam_loss_total/len(sentences):.4f}")
     # print(f"Final Beam Perplexity: {math.exp(beam_loss_total/len(sentences)):.2f}")
 
