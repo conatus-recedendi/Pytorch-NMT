@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from attention import Attention
+from clipped_lstm import ClippedLSTM
 
 
 class AttentionDecoderRNN(nn.Module):
@@ -35,7 +36,7 @@ class AttentionDecoderRNN(nn.Module):
         # Define layers
         self.embedding = nn.Embedding(tgt_vocab_size, embedding_size)
         self.dropout = nn.Dropout(dropout)
-        self.lstm = nn.LSTM(embedding_size, hidden_size, n_layers, dropout=dropout)
+        self.lstm = ClippedLSTM(embedding_size, hidden_size, n_layers, dropout=dropout)
         if attn_model == "base":
             # self.Wc = nn.Linear(hidden_size * 2, hidden_size, bias=True)
             self.Wc = None  # Not used in 'base' attention

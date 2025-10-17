@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from clipped_lstm import ClippedLSTM
 
 
 class EncoderRNN(nn.Module):
@@ -27,7 +28,7 @@ class EncoderRNN(nn.Module):
 
         self.embedding = nn.Embedding(src_vocab_size, embedding_size, padding_idx=2)
         self.dropout = nn.Dropout(dropout)
-        self.rnn = nn.LSTM(embedding_size, hidden_size, n_layers)
+        self.rnn = ClippedLSTM(embedding_size, hidden_size, n_layers)
 
         # Learnable initial hidden state
         self.init_hidden_param = nn.Parameter(
@@ -65,17 +66,18 @@ class EncoderRNN(nn.Module):
         # 4. RNN 처리 (PAD가 hidden state에 영향 안줌)
         packed_output, hidden_state = self.rnn(packed_embedded, hidden_state)
 
-        if self.clip_forward is not None:
-            # LSTM hidden_state is (hidden, cell) tuple
-            # Apply clipping to both hidden state and cell state
-            hidden_state = (
-                torch.clamp(
-                    hidden_state[0], min=-self.clip_forward, max=self.clip_forward
-                ),
-                torch.clamp(
-                    hidden_state[1], min=-self.clip_forward, max=self.clip_forward
-                ),
-            )
+        # if self.clip_forward is not None:
+        # LSTM hidden_state is (hidden, cell) tuple
+        # Apply clipping to both hidden state and cell state
+        # hidden_State clip grad
+        # hidden_state = (
+        #     torch.clamp(
+        #         hidden_state[0], min=-self.clip_forward, max=self.clip_forward
+        #     ),
+        #     torch.clamp(
+        #         hidden_state[1], min=-self.clip_forward, max=self.clip_forward
+        #     ),
+        # )
 
         # output, hidden_state = self.rnn(
         #     embedded, hidden_state
