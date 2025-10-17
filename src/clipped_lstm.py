@@ -27,6 +27,6 @@ class ClippedLSTM(nn.Module):
             hidden = (h, c)
 
         # Apply forward clipping to output
-        output = torch.clamp(output, -self.clip_forward, self.clip_forward)
+        # output = torch.clamp(output, -self.clip_forward, self.clip_forward)
 
         return output, hidden
