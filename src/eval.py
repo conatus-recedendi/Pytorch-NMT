@@ -256,10 +256,10 @@ def evaluate_file(input_file_path, input_ref_path, output_file_path=None, max_le
             # print("=" * 50)
         idx += 1
     loss /= total_token
-    # print(f"Final Average Greedy Loss: {loss/len(sentences):.4f}")
-    print(f"Final Average Greedy Loss: {loss:.4f}")
-    # print(f"Final Greedy Perplexity: {math.exp(loss/len(sentences)):.2f}")
-    print(f"Final Greedy Perplexity: {math.exp(loss):.2f}")
+    print(f"Final Average Greedy Loss: {loss/len(sentences):.4f}")
+    # print(f"Final Average Greedy Loss: {loss:.4f}")
+    print(f"Final Greedy Perplexity: {math.exp(loss/len(sentences)):.2f}")
+    # print(f"Final Greedy Perplexity: {math.exp(loss):.2f}")
     # print(f"Final Average Beam Loss: {beam_loss_total/len(sentences):.4f}")
     # print(f"Final Beam Perplexity: {math.exp(beam_loss_total/len(sentences)):.2f}")
 
@@ -308,21 +308,21 @@ def greedy_decode(
         if decoder_output.size(0) == 0:
             break
         # decoder_output = decoder_output.squeeze(0)  # [1, batch, vocab] -> [batch, vocab]
-        _loss = F.nll_loss(
-            decoder_output,
-            targets[di][mask],
-            ignore_index=Language.pad_token,
-            reduction="sum",
-        ).item()
-        # _loss = F.nll_loss(decoder_output, targets[di]).item()
         # _loss = F.nll_loss(
-        #     decoder_output, targets[di], ignore_index=Language.pad_token
+        #     decoder_output,
+        #     targets[di][mask],
+        #     ignore_index=Language.pad_token,
+        #     reduction="sum",
         # ).item()
+        # _loss = F.nll_loss(decoder_output, targets[di]).item()
+        _loss = F.nll_loss(
+            decoder_output, targets[di], ignore_index=Language.pad_token
+        ).item()
 
-        # loss += _loss / decoder_output.size(0) if not math.isnan(_loss) else 0  # or nan
-        loss += _loss
-        # valid_token += 1 if not math.isnan(_loss) else 0
-        valid_token += mask.sum().item()
+        loss += _loss / decoder_output.size(0) if not math.isnan(_loss) else 0  # or nan
+        # loss += _loss
+        valid_token += 1 if not math.isnan(_loss) else 0
+        # valid_token += mask.sum().item()
 
         # decoder_attentions[di, : decoder_attention.size(2)] += (
         #     decoder_attention.squeeze(0).squeeze(0).cpu().data
@@ -340,7 +340,7 @@ def greedy_decode(
         decoder_input = topi
         if is_teaching_force:
             decoder_input = targets[di].view(1, -1)
-    # loss /= valid_token
+    loss /= valid_token
     return (
         decoded_words,
         decoder_attentions[: di + 1, : encoder_outputs.size(0)],
