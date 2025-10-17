@@ -21,5 +21,5 @@ python ./src/eval.py \
     --beam_size 12 \
     --batch_size 1 \
     --device cuda \
-    --seed 19
+    --seed 19 \
     --reverse True
