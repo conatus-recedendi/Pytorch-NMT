@@ -187,10 +187,10 @@ def evaluate_sentence(sentence, ref_sentence, max_len=10):
     # beam_loss = metadata.get("loss", float("inf"))
 
     # # Also get greedy translation for comparison
-    greedy_words, greedy_attention, greedy_loss = greedy_decode(
+    greedy_words, greedy_attention, greedy_loss, _ = greedy_decode(
         decoder_context, decoder_hidden, encoder_outputs, max_len, target
     )
-    _, _, ppl_loss = greedy_decode(
+    _, _, ppl_loss, valid_token = greedy_decode(
         decoder_context,
         decoder_hidden,
         encoder_outputs,
@@ -201,7 +201,7 @@ def evaluate_sentence(sentence, ref_sentence, max_len=10):
     greedy_sentence = assemble_sentence(greedy_words)
 
     # return best_beam_sentence, greedy_sentence, ppl_loss, beam_loss, ref_pad_cnt
-    return None, greedy_sentence, ppl_loss, None, ref_pad_cnt
+    return None, greedy_sentence, ppl_loss, None, ref_pad_cnt, valid_token
 
 
 def evaluate_file(input_file_path, input_ref_path, output_file_path=None, max_len=10):
@@ -218,6 +218,7 @@ def evaluate_file(input_file_path, input_ref_path, output_file_path=None, max_le
 
     idx = 0
     loss = 0
+    total_token = 0
     beam_loss_total = 0
     ref_pad_cnt_total = 0
     for sentence in sentences:
@@ -225,12 +226,18 @@ def evaluate_file(input_file_path, input_ref_path, output_file_path=None, max_le
 
         # normalized_sentence = helpers.normalize_string(sentence)
         # normalized_sentence = [normalized_sentence]
-        beam_translation, greedy_translation, sen_loss, beam_loss, ref_pad_cnt = (
-            evaluate_sentence(sentence, ref_sentence, max_len=max_len)
-        )
+        (
+            beam_translation,
+            greedy_translation,
+            sen_loss,
+            beam_loss,
+            ref_pad_cnt,
+            valid_token,
+        ) = evaluate_sentence(sentence, ref_sentence, max_len=max_len)
         ref_pad_cnt_total += ref_pad_cnt
 
         loss += sen_loss
+        total_token += valid_token
         # beam_loss_total += beam_loss
         # print(f"Average loss: {loss/(idx+1):.4f}")
         # Use beam translation as default output
@@ -248,6 +255,7 @@ def evaluate_file(input_file_path, input_ref_path, output_file_path=None, max_le
             # print(f"greedy: {greedy_translation}")
             # print("=" * 50)
         idx += 1
+    loss /= total_token
     print(f"Final Average Greedy Loss: {loss/len(sentences):.4f}")
     print(f"Final Greedy Perplexity: {math.exp(loss/len(sentences)):.2f}")
     # print(f"Final Average Beam Loss: {beam_loss_total/len(sentences):.4f}")
@@ -293,21 +301,26 @@ def greedy_decode(
         decoder_output, decoder_context, decoder_hidden, decoder_attention = decoder(
             decoder_input, decoder_context, decoder_hidden, encoder_outputs
         )
-        # mask = targets[di] != Language.pad_token
-        # decoder_output = decoder_output[mask]
+        mask = targets[di] != Language.pad_token
+        decoder_output = decoder_output[mask]
         if decoder_output.size(0) == 0:
             break
         # decoder_output = decoder_output.squeeze(0)  # [1, batch, vocab] -> [batch, vocab]
-        # _loss = F.nll_loss(
-        #     decoder_output, targets[di][mask], ignore_index=Language.pad_token
-        # ).item()
-        _loss = F.nll_loss(decoder_output, targets[di]).item()
+        _loss = F.nll_loss(
+            decoder_output,
+            targets[di][mask],
+            ignore_index=Language.pad_token,
+            reduction="sum",
+        ).item()
+        # _loss = F.nll_loss(decoder_output, targets[di]).item()
         # _loss = F.nll_loss(
         #     decoder_output, targets[di], ignore_index=Language.pad_token
         # ).item()
 
-        loss += _loss / decoder_output.size(0) if not math.isnan(_loss) else 0  # or nan
-        valid_token += 1 if not math.isnan(_loss) else 0
+        # loss += _loss / decoder_output.size(0) if not math.isnan(_loss) else 0  # or nan
+        loss += _loss
+        # valid_token += 1 if not math.isnan(_loss) else 0
+        valid_token += mask.sum().item()
 
         # decoder_attentions[di, : decoder_attention.size(2)] += (
         #     decoder_attention.squeeze(0).squeeze(0).cpu().data
@@ -325,8 +338,13 @@ def greedy_decode(
         decoder_input = topi
         if is_teaching_force:
             decoder_input = targets[di].view(1, -1)
-    loss /= valid_token
-    return decoded_words, decoder_attentions[: di + 1, : encoder_outputs.size(0)], loss
+    # loss /= valid_token
+    return (
+        decoded_words,
+        decoder_attentions[: di + 1, : encoder_outputs.size(0)],
+        loss,
+        valid_token,
+    )
 
 
 def beam_decode(decoder_context, decoder_hidden, encoder_outputs, max_len, beam_size=5):
