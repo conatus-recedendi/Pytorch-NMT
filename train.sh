@@ -12,7 +12,7 @@ OMP_NUM_THREADS=20 MKL_NUM_THREADS=20 python src/train.py \
     --embedding_size 1000 \
     --hidden_size 1000 \
     --n_layers 4 \
-    --dropout 0.2 \
+    --dropout 0.0 \
     --teacher_forcing_ratio 1.0 \
     --clip 5.0 \
     --lr 1 \
@@ -23,4 +23,4 @@ OMP_NUM_THREADS=20 MKL_NUM_THREADS=20 python src/train.py \
     --device cuda \
     --seed 19 \
     --batch_size 128 \
-    --reverse True
+    --reverse False
