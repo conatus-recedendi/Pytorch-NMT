@@ -63,6 +63,7 @@ parser.add_argument(
 )
 parser.add_argument("--clip_forward", type=float, default=50.0)
 parser.add_argument("--clip_backward", type=float, default=1000.0)
+parser.add_argument("--input_forward", type=bool, default=False)
 args = parser.parse_args()
 
 print(sys.argv)
@@ -390,6 +391,7 @@ decoder = AttentionDecoderRNN(
     args.local,
     args.clip_forward,
     args.clip_backward,
+    args.input_forward,
 )
 # Move models to device
 encoder = encoder.to(device)
