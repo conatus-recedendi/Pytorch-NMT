@@ -20,6 +20,7 @@ class AttentionDecoderRNN(nn.Module):
         local=None,
         clip_forward=None,
         clip_backward=None,
+        input_forward=False,
     ):
         super(AttentionDecoderRNN, self).__init__()
         self.batch_size = batch_size
@@ -32,11 +33,27 @@ class AttentionDecoderRNN(nn.Module):
         self.local = local  # For local attention
         self.clip_forward = clip_forward
         self.clip_backward = clip_backward
+        self.input_forward = input_forward
 
         # Define layers
         self.embedding = nn.Embedding(tgt_vocab_size, embedding_size)
         self.dropout = nn.Dropout(dropout)
-        self.lstm = ClippedLSTM(embedding_size, hidden_size, n_layers, dropout=dropout)
+        if self.input_forward:
+            self.lstm = ClippedLSTM(
+                embedding_size + hidden_size,
+                hidden_size,
+                n_layers,
+                dropout=dropout,
+                input_forward=True,
+            )
+        else:
+            self.lstm = ClippedLSTM(
+                embedding_size,
+                hidden_size,
+                n_layers,
+                dropout=dropout,
+                input_forward=False,
+            )
         if attn_model == "base":
             # self.Wc = nn.Linear(hidden_size * 2, hidden_size, bias=True)
             self.Wc = None  # Not used in 'base' attention
@@ -71,11 +88,17 @@ class AttentionDecoderRNN(nn.Module):
         embedded = self.dropout(embedded)
 
         # 현 시점에서 LSTM 호출
+        if self.input_forward is not None:
+            rnn_input = torch.cat(
+                (embedded, decoder_context), 2
+            )  # [1, -1, embedding_size + hidden_size]
+        else:
+            rnn_input = embedded
         # rnn_input = torch.cat(
         #     (embedded, decoder_context), 2
         # )  # [1, -1, embedding_size + hidden_size]
         rnn_output, hidden_state = self.lstm(
-            embedded, hidden_state
+            rnn_input, hidden_state
         )  # rnn_output: [1, batch, hidden_size]
 
         if self.clip_forward is not None:

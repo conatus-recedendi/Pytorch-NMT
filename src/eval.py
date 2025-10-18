@@ -117,15 +117,51 @@ id = "id=10_attn=%s,local=%s,dropout=d%.2f,epoch=8" % (
     args.local if args.local else "global",
     args.dropout,
 )
-# Load model parameters
-encoder.load_state_dict(torch.load("./data/encoder_model_{}".format(id)))
-decoder.load_state_dict(torch.load("./data/decoder_model_{}".format(id)))
+# Load model parameters with compatibility handling
+try:
+    encoder.load_state_dict(torch.load("./data/encoder_model_{}".format(id)))
+    decoder.load_state_dict(torch.load("./data/decoder_model_{}".format(id)))
+    print("Models loaded successfully")
+except RuntimeError as e:
+    print(f"Error loading models: {e}")
+    print("Attempting to load with key mapping...")
+
+    # Load encoder with key mapping
+    encoder_state = torch.load("./data/encoder_model_{}".format(id))
+    encoder_mapped_state = {}
+    for key, value in encoder_state.items():
+        if key.startswith("rnn.") and not key.startswith("rnn.lstm."):
+            # Map old rnn.* keys to new rnn.lstm.* keys
+            new_key = key.replace("rnn.", "rnn.lstm.")
+            encoder_mapped_state[new_key] = value
+        else:
+            encoder_mapped_state[key] = value
+
+    encoder.load_state_dict(encoder_mapped_state, strict=False)
+
+    # Load decoder with key mapping
+    decoder_state = torch.load("./data/decoder_model_{}".format(id))
+    decoder_mapped_state = {}
+    for key, value in decoder_state.items():
+        if key.startswith("lstm.") and not key.startswith("lstm.lstm."):
+            # Map old lstm.* keys to new lstm.lstm.* keys (if needed)
+            new_key = key.replace("lstm.", "lstm.lstm.")
+            decoder_mapped_state[new_key] = value
+        else:
+            decoder_mapped_state[key] = value
+
+    decoder.load_state_dict(decoder_mapped_state, strict=False)
+    print("Models loaded with key mapping")
 
 # Only load attention weights if not base model
 if args.attn_model != "base":
-    decoder.attention.load_state_dict(
-        torch.load("./data/attention_model_{}".format(id))
-    )
+    try:
+        decoder.attention.load_state_dict(
+            torch.load("./data/attention_model_{}".format(id))
+        )
+        print("Attention weights loaded successfully")
+    except Exception as e:
+        print(f"Warning: Could not load attention weights: {e}")
 
 # Move models to device
 encoder = encoder.to(device)
