@@ -111,6 +111,8 @@ decoder = AttentionDecoderRNN(
     args.clip_forward,
     args.clip_backward,
 )
+encoder.eval()
+decoder.eval()
 
 id = "id=12_attn=%s,local=%s,dropout=d%.2f,epoch=12" % (
     args.attn_model,
