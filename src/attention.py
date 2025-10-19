@@ -146,33 +146,17 @@ class Attention(nn.Module):
             # Monotonic alignment: pt = t
             if decoder_step is None:
                 decoder_step = seq_len // 2  # fallback to middle
-            pt = torch.tensor(decoder_step, dtype=torch.float, device=hidden.device)
-            pt = pt.expand(batch_size)  # [batch_size]
-
+            pt = decoder_step
         elif self.local == "local-p":
             # Predictive alignment: pt = S * sigmoid(vp^T tanh(Wp*ht))
-            # hidden: [batch_size, hidden_size]
             tanh_output = torch.tanh(self.Wp(hidden))  # [batch_size, hidden_size]
-            # vp: [hidden_size, 1]
             sigmoid_input = torch.matmul(tanh_output, self.vp).squeeze(
                 -1
             )  # [batch_size]
             pt = seq_len * torch.sigmoid(sigmoid_input)  # [batch_size]
 
-        # Create window around pt
-        D = self.window_size  # Window half-size
-
-        # Calculate window bounds for each batch
-        window_start = torch.clamp(pt - D, 0, seq_len - 1).long()  # [batch_size]
-        window_end = torch.clamp(pt + D + 1, 1, seq_len).long()  # [batch_size]
-
-        # For simplicity, use a fixed window size and handle variable lengths
-        max_window_size = 2 * D + 1
-
         # Initialize attention weights
-        attention_weights = torch.zeros(
-            batch_size, max_window_size, device=hidden.device
-        )
+        attention_weights = torch.zeros(batch_size, 1, seq_len, device=hidden.device)
 
         for b in range(batch_size):
             if self.local == "local-p":
@@ -204,6 +188,7 @@ class Attention(nn.Module):
                 positions = torch.arange(
                     start, end, dtype=torch.float, device=hidden.device
                 )
+                D = self.window_size
                 gaussian_weights = torch.exp(
                     -((positions - pt[b]) ** 2) / (2 * (D / 2) ** 2)
                 )
@@ -224,7 +209,7 @@ class Attention(nn.Module):
                     window_attn_squeezed[:target_size]
                 )
 
-        return attention_weights.unsqueeze(1)  # [batch_size, 1, max_window_size]
+        return attention_weights  # [batch_size, 1, seq_len]
 
     def _compute_energies(self, hidden, encoder_outputs):
         """Compute attention energies for a given hidden state and encoder outputs"""
