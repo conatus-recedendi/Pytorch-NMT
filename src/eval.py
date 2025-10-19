@@ -199,16 +199,16 @@ def evaluate_sentence(sentence, ref_sentence, max_len=10):
     decoder_hidden = encoder_hidden
 
     # Beam search decode
-    topk_decoder = TopKDecode(
-        decoder,
-        decoder.hidden_size,
-        args.beam_size,
-        output_lang.n_words,
-        Language.sos_token,
-        Language.eos_token,
-        device,
-    )
-    topk_decoder = topk_decoder.to(device)
+    # topk_decoder = TopKDecode(
+    #     decoder,
+    #     decoder.hidden_size,
+    #     args.beam_size,
+    #     output_lang.n_words,
+    #     Language.sos_token,
+    #     Language.eos_token,
+    #     device,
+    # )
+    # topk_decoder = topk_decoder.to(device)
 
     # decoder_outputs, _, metadata = topk_decoder(
     #     decoder_context,
