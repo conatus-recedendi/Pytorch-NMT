@@ -383,7 +383,6 @@ def greedy_decode(
         decoder_input = topi
         if is_teaching_force:
             decoder_input = targets[di].view(1, -1)
-    loss /= valid_token
     return (
         decoded_words,
         decoder_attentions[: di + 1, : encoder_outputs.size(0)],
