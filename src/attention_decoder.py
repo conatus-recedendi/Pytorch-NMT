@@ -88,7 +88,7 @@ class AttentionDecoderRNN(nn.Module):
         embedded = self.dropout(embedded)
 
         # 현 시점에서 LSTM 호출
-        if self.input_forward is not None:
+        if self.input_forward:
             rnn_input = torch.cat(
                 (embedded, decoder_context), 2
             )  # [1, -1, embedding_size + hidden_size]
