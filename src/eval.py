@@ -97,7 +97,6 @@ print(
         args.reverse,
         args.clip_forward,
         args.clip_backward,
-        args.input_forward,
     )
 )
 
