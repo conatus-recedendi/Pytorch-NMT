@@ -60,6 +60,7 @@ parser.add_argument(
 parser.add_argument(
     "--reverse", type=bool, help="reverse source sentence", default=False
 )
+parser.add_argument("--input_forward", type=bool, help="input feeding", default=False)
 parser.add_argument("--clip_forward", type=float, default=50.0)
 parser.add_argument("--clip_backward", type=float, default=1000.0)
 args = parser.parse_args()
@@ -96,6 +97,7 @@ print(
         args.reverse,
         args.clip_forward,
         args.clip_backward,
+        args.input_forward,
     )
 )
 
@@ -110,6 +112,7 @@ decoder = AttentionDecoderRNN(
     args.local,
     args.clip_forward,
     args.clip_backward,
+    args.input_forward,
 )
 encoder.eval()
 decoder.eval()
@@ -296,7 +299,7 @@ def evaluate_file(input_file_path, input_ref_path, output_file_path=None, max_le
             # print(f"greedy: {greedy_translation}")
             # print("=" * 50)
         idx += 1
-    loss /= total_token
+    # loss /= total_token
     print(f"Final Average Greedy Loss: {loss/len(sentences):.4f}")
     # print(f"Final Average Greedy Loss: {loss:.4f}")
     print(f"Final Greedy Perplexity: {math.exp(loss/len(sentences)):.2f}")
