@@ -112,7 +112,7 @@ decoder = AttentionDecoderRNN(
     args.clip_backward,
 )
 
-id = "id=10_attn=%s,local=%s,dropout=d%.2f,epoch=8" % (
+id = "id=12_attn=%s,local=%s,dropout=d%.2f,epoch=12" % (
     args.attn_model,
     args.local if args.local else "global",
     args.dropout,
