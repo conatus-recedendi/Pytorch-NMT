@@ -12,7 +12,7 @@ python ./src/eval.py \
     --embedding_size 1000 \
     --hidden_size 1000 \
     --n_layers 4 \
-    --dropout 0.0 \
+    --dropout 0.2 \
     --language de \
     --input_file ./rewrite/test.14.en \
     --input_ref_file ./rewrite/test.14.de \
