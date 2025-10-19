@@ -290,7 +290,6 @@ def evaluate_file(input_file_path, input_ref_path, output_file_path=None, max_le
         #     {"source": sentence, "beam": beam_translation, "greedy": greedy_translation}
         # )
         results.append({"source": sentence, "greedy": greedy_translation})
-        print(sen_loss)
         if idx % 100 == 0:  # Print samples every 100 sentences
             print(f"{idx}/{len(sentences)}")
             # print(f"src: {sentence}")
@@ -299,7 +298,7 @@ def evaluate_file(input_file_path, input_ref_path, output_file_path=None, max_le
             # print(f"greedy: {greedy_translation}")
             # print("=" * 50)
         idx += 1
-    # loss /= total_token
+    loss /= total_token
     print(f"Final Average Greedy Loss: {loss/len(sentences):.4f}")
     # print(f"Final Average Greedy Loss: {loss:.4f}")
     print(f"Final Greedy Perplexity: {math.exp(loss/len(sentences)):.2f}")
