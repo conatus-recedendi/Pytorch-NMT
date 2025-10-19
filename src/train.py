@@ -575,8 +575,8 @@ for epoch in range(1, args.n_epochs + 1):
     plot_loss_total += avg_loss
     # if total_batch_count % 10000 == 0:
     #     # get test perplexity for Figure 5
-    if epoch > 4:
-        id = "id=16_attn=%s,local=%s,dropout=d%.2f,epoch=%d" % (
+    if epoch > 6:
+        id = "id=15_attn=%s,local=%s,dropout=d%.2f,epoch=%d" % (
             args.attn_model,
             args.local if args.local else "global",
             args.dropout,

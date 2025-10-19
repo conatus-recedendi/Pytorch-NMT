@@ -8,7 +8,7 @@
 
 
 OMP_NUM_THREADS=20 MKL_NUM_THREADS=20 python src/train.py \
-    --attn_model location \
+    --attn_model general \
     --embedding_size 1000 \
     --hidden_size 1000 \
     --n_layers 4 \
@@ -24,4 +24,4 @@ OMP_NUM_THREADS=20 MKL_NUM_THREADS=20 python src/train.py \
     --seed 19 \
     --batch_size 128 \
     --reverse True \
-    --input_forward True
+    --local local-p 
