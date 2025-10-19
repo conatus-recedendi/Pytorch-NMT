@@ -290,7 +290,7 @@ def evaluate_file(input_file_path, input_ref_path, output_file_path=None, max_le
         #     {"source": sentence, "beam": beam_translation, "greedy": greedy_translation}
         # )
         results.append({"source": sentence, "greedy": greedy_translation})
-        print(loss)
+        print(sen_loss)
         if idx % 100 == 0:  # Print samples every 100 sentences
             print(f"{idx}/{len(sentences)}")
             # print(f"src: {sentence}")
@@ -384,6 +384,7 @@ def greedy_decode(
         decoder_input = topi
         if is_teaching_force:
             decoder_input = targets[di].view(1, -1)
+    loss /= valid_token
     return (
         decoded_words,
         decoder_attentions[: di + 1, : encoder_outputs.size(0)],
