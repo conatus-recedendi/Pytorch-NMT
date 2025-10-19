@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-from clipped_lstm import ClippedLSTM
 
 
 class EncoderRNN(nn.Module):
@@ -28,7 +27,7 @@ class EncoderRNN(nn.Module):
 
         self.embedding = nn.Embedding(src_vocab_size, embedding_size, padding_idx=2)
         self.dropout = nn.Dropout(dropout)
-        self.rnn = ClippedLSTM(embedding_size, hidden_size, n_layers)
+        self.rnn = nn.LSTM(embedding_size, hidden_size, n_layers)
 
         # Learnable initial hidden state
         self.init_hidden_param = nn.Parameter(
@@ -58,38 +57,33 @@ class EncoderRNN(nn.Module):
         embedded = self.dropout(embedded)
         embedded = embedded.transpose(0, 1)  # [len, batch, embedding_size] for LSTM
 
-        # 3. Pack sequences (PAD 무시)
+        # Pack sequences for efficient processing
         packed_embedded = nn.utils.rnn.pack_padded_sequence(
             embedded, lengths, batch_first=False, enforce_sorted=False
         )
 
-        # 4. RNN 처리 (PAD가 hidden state에 영향 안줌)
+        # Forward through RNN (ClippedLSTM can now handle PackedSequence)
         packed_output, hidden_state = self.rnn(packed_embedded, hidden_state)
 
-        # if self.clip_forward is not None:
-        # LSTM hidden_state is (hidden, cell) tuple
-        # Apply clipping to both hidden state and cell state
-        # hidden_State clip grad
-        # hidden_state = (
-        #     torch.clamp(
-        #         hidden_state[0], min=-self.clip_forward, max=self.clip_forward
-        #     ),
-        #     torch.clamp(
-        #         hidden_state[1], min=-self.clip_forward, max=self.clip_forward
-        #     ),
-        # )
-
-        # output, hidden_state = self.rnn(
-        #     embedded, hidden_state
-        # )  # hidden_state is (h_n, c_n) tuple
-
-        # 5. Unpack sequences
+        # Unpack sequences
         output, _ = nn.utils.rnn.pad_packed_sequence(
             packed_output, batch_first=False, padding_value=0.0
         )
-        # output, (h_n, c_n) = super().forward(input, hx)
 
-        return output, hidden_state
+        # Manual clipping for hidden states (additional safety)
+        if self.clip_forward is not None:
+            hidden_state = (
+                torch.clamp(
+                    hidden_state[0], min=-self.clip_forward, max=self.clip_forward
+                ),
+                torch.clamp(
+                    hidden_state[1], min=-self.clip_forward, max=self.clip_forward
+                ),
+            )
+            # Apply gradient norm clipping
+            torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=50.0)
+
+        return output, hidden_state  # [seq_len, batch, hidden_size]
 
     def init_hidden(self, device, actual_batch_size=None):
         batch_size = (
