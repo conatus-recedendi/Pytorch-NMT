@@ -24,9 +24,10 @@ class Attention(nn.Module):
             self.other = nn.Parameter(torch.FloatTensor(1, self.hidden_size))
         elif self.method == "location":
             # Location attention: we'll compute Wa*ht dynamically based on seq_len
-            # Use a linear layer to generate location weights dynamically
-            self.location_layer = nn.Linear(
-                self.hidden_size, self.hidden_size, bias=False
+            # Store a parameter matrix that we'll slice based on actual sequence length
+            self.max_seq_len = 50  # Maximum expected sequence length
+            self.location_weights = nn.Parameter(
+                torch.FloatTensor(self.max_seq_len, self.hidden_size)
             )
         elif self.method == "base":
             pass
@@ -110,22 +111,16 @@ class Attention(nn.Module):
             ).squeeze(2)
         elif self.method == "location":
             # Location-based attention: at = softmax(Wa * ht)
-            # Instead of using fixed location_weights, use dynamic computation
+            # Wa: [seq_len, hidden_size], ht: [batch_size, hidden_size]
+            # Result: [batch_size, seq_len]
+
+            # Use the appropriate slice of location_weights based on actual seq_len
+            Wa = self.location_weights[:seq_len, :]  # [seq_len, hidden_size]
+
+            # Compute energies: batch matrix multiplication
             # hidden: [batch_size, hidden_size]
-            # encoder_outputs: [seq_len, batch_size, hidden_size]
-
-            # Transform hidden state to create position-dependent weights
-            position_weights = self.location_layer(hidden)  # [batch_size, hidden_size]
-
-            # Compute energies using position weights and encoder outputs
-            encoder_outputs_t = encoder_outputs.transpose(
-                0, 1
-            )  # [batch_size, seq_len, hidden_size]
-            energies = torch.bmm(
-                encoder_outputs_t, position_weights.unsqueeze(2)
-            ).squeeze(
-                2
-            )  # [batch_size, seq_len]
+            # Wa^T: [hidden_size, seq_len]
+            energies = torch.matmul(hidden, Wa.t())  # [batch_size, seq_len]
         elif self.method == "base":
             # Base attention: at = softmax(ht)
             # ht: [batch_size, hidden_size]
@@ -180,8 +175,14 @@ class Attention(nn.Module):
         )
 
         for b in range(batch_size):
-            start = window_start[b].item()
-            end = min(window_end[b].item(), seq_len)
+            if self.local == "local-p":
+                pt_val = int(pt[b].item())
+            else:
+                pt_val = pt
+
+            # Calculate window boundaries with safety checks
+            start = max(0, min(pt_val - self.window_size, seq_len - 1))
+            end = min(seq_len, max(pt_val + self.window_size + 1, start + 1))
             window_len = end - start
 
             if window_len <= 0:
@@ -212,7 +213,16 @@ class Attention(nn.Module):
             window_attention = F.softmax(window_energies, dim=1)  # [1, window_len]
 
             # Place in full attention tensor
-            attention_weights[b, :window_len] = window_attention.squeeze(0)
+            # Ensure window_attention size matches window_len with safety checks
+            window_attn_squeezed = window_attention.squeeze(0)
+            actual_size = window_attn_squeezed.size(0)
+            target_size = min(window_len, actual_size, seq_len - start)
+
+            # Safely assign to attention weights
+            if target_size > 0:
+                attention_weights[b, 0, start : start + target_size] = (
+                    window_attn_squeezed[:target_size]
+                )
 
         return attention_weights.unsqueeze(1)  # [batch_size, 1, max_window_size]
 
@@ -243,16 +253,8 @@ class Attention(nn.Module):
             ).squeeze(2)
 
         elif self.method == "location":
-            # Use the same dynamic location computation as in _global_attention
-            position_weights = self.location_layer(hidden)  # [batch_size, hidden_size]
-            encoder_outputs_t = encoder_outputs.transpose(
-                0, 1
-            )  # [batch_size, seq_len, hidden_size]
-            energies = torch.bmm(
-                encoder_outputs_t, position_weights.unsqueeze(2)
-            ).squeeze(
-                2
-            )  # [batch_size, seq_len]
+            Wa = self.location_weights[:seq_len, :]
+            energies = torch.matmul(hidden, Wa.t())
 
         elif self.method == "base":
             energies = (
