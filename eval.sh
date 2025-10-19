@@ -8,7 +8,7 @@
 
 
 python ./src/eval.py \
-    --attn_model base \
+    --attn_model location \
     --embedding_size 1000 \
     --hidden_size 1000 \
     --n_layers 4 \
@@ -16,7 +16,7 @@ python ./src/eval.py \
     --language de \
     --input_file ./rewrite/test.14.en \
     --input_ref_file ./rewrite/test.14.de \
-    --output_file test.14.hypothesis.id=12.de \
+    --output_file test.14.hypothesis.id=14.de \
     --max_len 50 \
     --beam_size 12 \
     --batch_size 1 \
