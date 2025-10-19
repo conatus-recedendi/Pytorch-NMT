@@ -115,23 +115,40 @@ class AttentionDecoderRNN(nn.Module):
 
         # Calculate attention
         if self.attn_model == "base":
-            # decoder context는 사용하지 않음
-            context = encoder_outputs[-1, :, :].unsqueeze(
-                0
-            )  # [1, batch, hidden_size  ]
+            # Base model: no attention, no context
+            output = F.log_softmax(self.Ws(rnn_output).squeeze(0), dim=1)
+
+            # Return dummy context for interface consistency
+            dummy_context = torch.zeros_like(decoder_context)
             attention_weights = None
-            # output = F.tanh(self.out(rnn_output), dim=2)
-            # h_tilde = rnn_output
-            return (
-                F.log_softmax(self.Ws(rnn_output).squeeze(0), dim=1),
-                context,
-                hidden_state,
-                attention_weights,
-            )
+
+            return output, dummy_context, hidden_state, attention_weights
 
         else:
+            # Attention model
             attention_weights = self.attention(rnn_output.squeeze(0), encoder_outputs)
-            #  print(attention_weights.shape)
+
+            # Debug: check dimensions
+            # print(f"attention_weights shape: {attention_weights.shape}")
+            # print(f"encoder_outputs shape: {encoder_outputs.shape}")
+
+            # Ensure attention_weights matches encoder sequence length
+            seq_len = encoder_outputs.size(0)
+            if attention_weights.size(2) != seq_len:
+                # Truncate or pad attention weights to match encoder sequence length
+                if attention_weights.size(2) > seq_len:
+                    attention_weights = attention_weights[:, :, :seq_len]
+                else:
+                    # Pad with zeros if attention weights are shorter
+                    pad_size = seq_len - attention_weights.size(2)
+                    padding = torch.zeros(
+                        attention_weights.size(0),
+                        attention_weights.size(1),
+                        pad_size,
+                        device=attention_weights.device,
+                    )
+                    attention_weights = torch.cat([attention_weights, padding], dim=2)
+
             # context is weight sum of attention weight and encoder_output
             context = torch.bmm(
                 attention_weights, encoder_outputs.transpose(0, 1)
@@ -139,10 +156,11 @@ class AttentionDecoderRNN(nn.Module):
 
             context = context.transpose(0, 1)  # [1, -1, hidden_size]
 
-        h_tilde = torch.tanh(
-            self.Wc(torch.cat((rnn_output, context), 2))
-        )  # [1, -1, hidden_size]
-        logits = self.Ws(h_tilde).squeeze(0)  # [batch, tgt_vocab_size]
-        log_prob = F.log_softmax(logits, dim=1)
+            # Attentional vector h̃_t = tanh(Wc[ht; ct])
+            h_tilde = torch.tanh(
+                self.Wc(torch.cat((rnn_output, context), 2))
+            )  # [1, -1, hidden_size]
+            logits = self.Ws(h_tilde).squeeze(0)  # [batch, tgt_vocab_size]
+            log_prob = F.log_softmax(logits, dim=1)
 
-        return log_prob, context, hidden_state, attention_weights
+            return log_prob, h_tilde, hidden_state, attention_weights
