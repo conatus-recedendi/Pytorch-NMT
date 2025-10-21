@@ -4,6 +4,8 @@
 
 # base + reverse + dropout
 
+# bash train_id=12.sh 1> base_id=12.log 2>/dev/tty
+
 OMP_NUM_THREADS=20 MKL_NUM_THREADS=20 python src/train.py \
     --attn_model base \
     --embedding_size 1000 \

@@ -116,7 +116,7 @@ decoder = AttentionDecoderRNN(
 encoder.eval()
 decoder.eval()
 
-id = "id=14_attn=%s,local=%s,dropout=d%.2f,epoch=12" % (
+id = "id=12_attn=%s,local=%s,dropout=d%.2f,epoch=12" % (
     args.attn_model,
     args.local if args.local else "global",
     args.dropout,
