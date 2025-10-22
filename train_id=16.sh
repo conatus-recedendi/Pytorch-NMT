@@ -4,9 +4,12 @@
 
 # base + reverse + dropout + global + location + feed input
 
-# bash train_id=16.sh 1> base_id=16.log 2>/dev/tty
+# Usage examples:
+# bash train_id=16.sh 1> base_id=16_continue.log 2>/dev/tty                    # Start from epoch 1
+
 
 OMP_NUM_THREADS=20 MKL_NUM_THREADS=20 python src/train.py \
+    --run_id 16 \
     --attn_model location \
     --embedding_size 1000 \
     --hidden_size 1000 \
@@ -23,4 +26,7 @@ OMP_NUM_THREADS=20 MKL_NUM_THREADS=20 python src/train.py \
     --seed 19 \
     --batch_size 128 \
     --reverse True \
-    --input_forward True
+    --input_forward True \
+    --checkpoint_dir "./data/" \
+    --resume_epoch 9 
+ 

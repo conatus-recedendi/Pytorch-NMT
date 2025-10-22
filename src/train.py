@@ -64,6 +64,24 @@ parser.add_argument(
 parser.add_argument("--clip_forward", type=float, default=50.0)
 parser.add_argument("--clip_backward", type=float, default=1000.0)
 parser.add_argument("--input_forward", type=bool, default=False)
+parser.add_argument(
+    "--resume_epoch",
+    type=int,
+    default=None,
+    help="Resume training from specific epoch (1-based). If not provided, start from epoch 1",
+)
+parser.add_argument(
+    "--checkpoint_dir",
+    type=str,
+    default="./data/",
+    help="Directory to save/load checkpoints",
+)
+parser.add_argument(
+    "--run_id",
+    type=int,
+    default=1000,
+    help="Unique identifier for the training run",
+)
 args = parser.parse_args()
 
 print(sys.argv)
@@ -440,6 +458,114 @@ progress = 0.0
 avg_loss = 0.0
 total_batch_count = 0
 batch_size = args.batch_size
+
+# ✅ Checkpoint loading functionality
+start_epoch = 1
+
+
+def load_checkpoint(resume_epoch):
+    """Load checkpoint from specific epoch"""
+    try:
+        # Create model ID string (same format as saving)
+        id_str = "id={}_attn={},local={},dropout=d{:.2f},epoch={}".format(
+            args.run_id,
+            args.attn_model,
+            args.local if args.local else "global",
+            args.dropout,
+            resume_epoch,
+        )
+
+        print(f"Loading checkpoint from epoch {resume_epoch}...")
+        print(f"Model ID: {id_str}")
+
+        # Load encoder
+        encoder_path = f"{args.checkpoint_dir}encoder_model_{id_str}"
+        encoder_state = torch.load(encoder_path, map_location=device)
+
+        # Handle key mapping for compatibility (old vs new LSTM structure)
+        encoder_mapped_state = {}
+        for key, value in encoder_state.items():
+            if key.startswith("rnn.") and not key.startswith("rnn.lstm."):
+                new_key = key.replace("rnn.", "rnn.lstm.")
+                encoder_mapped_state[new_key] = value
+            else:
+                encoder_mapped_state[key] = value
+
+        encoder.load_state_dict(encoder_mapped_state, strict=False)
+        print("✅ Encoder checkpoint loaded successfully")
+
+        # Load decoder
+        decoder_path = f"{args.checkpoint_dir}decoder_model_{id_str}"
+        decoder_state = torch.load(decoder_path, map_location=device)
+
+        # Handle key mapping for decoder LSTM
+        decoder_mapped_state = {}
+        for key, value in decoder_state.items():
+            if key.startswith("lstm.") and not key.startswith("lstm.lstm."):
+                new_key = key.replace("lstm.", "lstm.lstm.")
+                decoder_mapped_state[new_key] = value
+            else:
+                decoder_mapped_state[key] = value
+
+        decoder.load_state_dict(decoder_mapped_state, strict=False)
+        print("✅ Decoder checkpoint loaded successfully")
+
+        # Load attention weights if not base model
+        if args.attn_model != "base":
+            try:
+                attention_path = f"{args.checkpoint_dir}attention_model_{id_str}"
+                decoder.attention.load_state_dict(
+                    torch.load(attention_path, map_location=device)
+                )
+                print("✅ Attention weights loaded successfully")
+            except Exception as e:
+                print(f"⚠️  Warning: Could not load attention weights: {e}")
+
+        # Load optimizer states (optional)
+        try:
+            encoder_opt_path = f"{args.checkpoint_dir}encoder_optimizer_{id_str}"
+            encoder_optimizer.load_state_dict(
+                torch.load(encoder_opt_path, map_location=device)
+            )
+            print("✅ Encoder optimizer state loaded")
+        except:
+            print("⚠️  Encoder optimizer state not found, using fresh optimizer")
+
+        try:
+            decoder_opt_path = f"{args.checkpoint_dir}decoder_optimizer_{id_str}"
+            decoder_optimizer.load_state_dict(
+                torch.load(decoder_opt_path, map_location=device)
+            )
+            print("✅ Decoder optimizer state loaded")
+        except:
+            print("⚠️  Decoder optimizer state not found, using fresh optimizer")
+
+        return True
+
+    except Exception as e:
+        print(f"❌ Error loading checkpoint: {e}")
+        print("Starting training from scratch...")
+        return False
+
+
+# Check if we should resume from checkpoint
+if args.resume_epoch is not None:
+    if args.resume_epoch < 1 or args.resume_epoch > args.n_epochs:
+        print(
+            f"❌ Invalid resume_epoch: {args.resume_epoch}. Must be between 1 and {args.n_epochs}"
+        )
+        exit(1)
+
+    if load_checkpoint(args.resume_epoch):
+        start_epoch = args.resume_epoch + 1  # Start from next epoch
+        print(f"🚀 Resuming training from epoch {start_epoch}")
+    else:
+        print("🔄 Failed to load checkpoint, starting from scratch")
+        start_epoch = 1
+else:
+    print("🆕 Starting training from scratch")
+    start_epoch = 1
+
 print(
     "max total_Batch_count: ",
     (len(pairs) // batch_size) * args.n_epochs,
@@ -448,7 +574,7 @@ print(
     batch_size,
     args.n_epochs,
 )
-for epoch in range(1, args.n_epochs + 1):
+for epoch in range(start_epoch, args.n_epochs + 1):
     # Get training data for this cycle
     if args.dropout < 0.01 and epoch > 5:
         lr = args.lr / (2 ** (epoch - 5))  # More efficient learning rate decay
@@ -576,7 +702,8 @@ for epoch in range(1, args.n_epochs + 1):
     # if total_batch_count % 10000 == 0:
     #     # get test perplexity for Figure 5
     if epoch > 6:
-        id = "id=16_attn=%s,local=%s,dropout=d%.2f,epoch=%d" % (
+        id = "id=%d_attn=%s,local=%s,dropout=d%.2f,epoch=%d" % (
+            args.run_id,
             args.attn_model,
             args.local if args.local else "global",
             args.dropout,
@@ -586,9 +713,11 @@ for epoch in range(1, args.n_epochs + 1):
         torch.save(encoder.state_dict(), "./data/encoder_model_{}".format(id))
         torch.save(decoder.state_dict(), "./data/decoder_model_{}".format(id))
 
+        # Save attention weights if not base model
         torch.save(
             decoder.attention.state_dict(), "./data/attention_model_{}".format(id)
         )
+        print(f"✅ Checkpoint saved for epoch {epoch}: {id}")
     if epoch == 0:
         continue
 
