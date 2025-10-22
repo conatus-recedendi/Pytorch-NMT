@@ -192,7 +192,7 @@ decoder = decoder.to(device)
 
 def evaluate_sentence(sentence, ref_sentence, max_len=10):
     input = etl.tensor_from_sentence(
-        input_lang, sentence, device, is_src=True, is_reverse=False
+        input_lang, sentence, device, is_src=True, is_reverse=args.reverse
     )
     target = etl.tensor_from_sentence(
         output_lang, ref_sentence, device, is_src=False, is_reverse=False
