@@ -143,12 +143,12 @@ except RuntimeError as e:
     decoder_mapped_state = {}
     for key, value in decoder_state.items():
         print(key)
-        if key.startswith("lstm.") and not key.startswith("lstm.lstm."):
-            # Map old lstm.* keys to new lstm.lstm.* keys (if needed)
-            new_key = key.replace("lstm.", "lstm.lstm.")
-            decoder_mapped_state[new_key] = value
-        else:
-            decoder_mapped_state[key] = value
+        # if key.startswith("lstm.") and not key.startswith("lstm.lstm."):
+        #     # Map old lstm.* keys to new lstm.lstm.* keys (if needed)
+        #     new_key = key.replace("lstm.", "lstm.lstm.")
+        #     decoder_mapped_state[new_key] = value
+        # else:
+        decoder_mapped_state[key] = value
 
     decoder.load_state_dict(decoder_mapped_state, strict=False)
     print("Models loaded with key mapping")
