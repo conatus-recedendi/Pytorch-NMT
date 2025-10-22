@@ -39,6 +39,8 @@ class AttentionDecoderRNN(nn.Module):
         self.embedding = nn.Embedding(tgt_vocab_size, embedding_size)
         self.dropout = nn.Dropout(dropout)
         if self.input_forward:
+            print("Using input feeding in AttentionDecoderRNN.")
+            print(self.input_forward)
             self.lstm = ClippedLSTM(
                 embedding_size + hidden_size,
                 hidden_size,
@@ -47,6 +49,8 @@ class AttentionDecoderRNN(nn.Module):
                 input_forward=True,
             )
         else:
+            print("Using input feeding in AttentionDecoderRNN.")
+            print(self.input_forward)
             self.lstm = ClippedLSTM(
                 embedding_size,
                 hidden_size,
