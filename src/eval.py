@@ -155,6 +155,7 @@ except RuntimeError as e:
             encoder_mapped_state[new_key] = value
         else:
             encoder_mapped_state[key] = value
+        print(encoder_mapped_state)
 
     encoder.load_state_dict(encoder_mapped_state, strict=False)
 
