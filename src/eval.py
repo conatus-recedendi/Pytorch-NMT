@@ -306,7 +306,7 @@ def evaluate_file(input_file_path, input_ref_path, output_file_path=None, max_le
         # )
         results.append({"source": sentence, "greedy": greedy_translation})
         if idx % 100 == 0:  # Print samples every 100 sentences
-            print(f"{idx}/{len(sentences)} | latest avg loss: {loss:.4f}")
+            print(f"{idx}/{len(sentences)} | latest avg loss: {sen_loss:.4f}")
             # print(f"src: {sentence}")
             # print(f"ref: {ref_sentences[idx]}")
             # print(f"beam: {beam_translation}")
