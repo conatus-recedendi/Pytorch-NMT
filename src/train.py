@@ -484,6 +484,8 @@ def load_checkpoint(resume_epoch):
 
         # Handle key mapping for compatibility (old vs new LSTM structure)
         encoder_mapped_state = {}
+        print("encoder state keys:")
+        print(encoder_state.keys())
         for key, value in encoder_state.items():
             if key.startswith("rnn.") and not key.startswith("rnn.lstm."):
                 new_key = key.replace("rnn.", "rnn.lstm.")
@@ -500,6 +502,8 @@ def load_checkpoint(resume_epoch):
 
         # Handle key mapping for decoder LSTM
         decoder_mapped_state = {}
+        print("decoder state keys:")
+        print(decoder_state.keys())
         for key, value in decoder_state.items():
             if key.startswith("lstm.") and not key.startswith("lstm.lstm."):
                 new_key = key.replace("lstm.", "lstm.lstm.")
