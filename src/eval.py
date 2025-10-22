@@ -134,6 +134,14 @@ except RuntimeError as e:
     encoder_state = torch.load("./data/encoder_model_{}".format(id))
     encoder_mapped_state = {}
     for key, value in encoder_state.items():
+        encoder_mapped_state[key] = value
+
+    encoder.load_state_dict(encoder_mapped_state, strict=False)
+
+    # Load decoder with key mapping
+    decoder_state = torch.load("./data/decoder_model_{}".format(id))
+    decoder_mapped_state = {}
+    for key, value in decoder_state.items():
         if key.startswith("lstm.lstm."):
             # lstm.lstm.weight_ih_l0 -> lstm.lstm_layers.0.weight_ih_l0
             # lstm.lstm.weight_ih_l1 -> lstm.lstm_layers.1.weight_ih_l0
@@ -152,25 +160,11 @@ except RuntimeError as e:
                 # 레이어 번호가 없는 경우 그대로 변환
                 new_key = key.replace("lstm.lstm.", "lstm.lstm_layers.0.")
 
-            encoder_mapped_state[new_key] = value
+            decoder_mapped_state[new_key] = value
         else:
-            encoder_mapped_state[key] = value
-        print(encoder_mapped_state)
+            decoder_mapped_state[key] = value
 
-    encoder.load_state_dict(encoder_mapped_state, strict=False)
-
-    # Load decoder with key mapping
-    decoder_state = torch.load("./data/decoder_model_{}".format(id))
-    decoder_mapped_state = {}
-    for key, value in decoder_state.items():
-        print(key)
-        # if key.startswith("lstm.") and not key.startswith("lstm.lstm."):
-        #     # Map old lstm.* keys to new lstm.lstm.* keys (if needed)
-        #     new_key = key.replace("lstm.", "lstm.lstm.")
-        #     decoder_mapped_state[new_key] = value
-        # else:
-        decoder_mapped_state[key] = value
-
+    print(decoder_mapped_state.keys())
     decoder.load_state_dict(decoder_mapped_state, strict=False)
     print("Models loaded with key mapping")
 
