@@ -113,6 +113,7 @@ decoder = AttentionDecoderRNN(
     args.clip_backward,
     args.input_forward,
 )
+)
 encoder.eval()
 decoder.eval()
 

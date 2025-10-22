@@ -54,6 +54,8 @@ class ClippedLSTM(nn.Module):
             self.dropout = nn.Dropout(dropout) if dropout > 0 else None
 
         else:
+            print("Using standard LSTM without input feeding.")
+            print(input_size, hidden_size, num_layers)
             # Standard LSTM or single layer
             self.lstm = nn.LSTM(
                 input_size=input_size,
