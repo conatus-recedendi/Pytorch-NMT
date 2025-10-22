@@ -133,26 +133,28 @@ except RuntimeError as e:
     # Load encoder with key mapping
     encoder_state = torch.load("./data/encoder_model_{}".format(id))
     encoder_mapped_state = {}
-for key, value in encoder_state.items():
-    if key.startswith("lstm.lstm."):
-        # lstm.lstm.weight_ih_l0 -> lstm.lstm_layers.0.weight_ih_l0
-        # lstm.lstm.weight_ih_l1 -> lstm.lstm_layers.1.weight_ih_l0
-        # 키에서 레이어 번호 추출 (마지막 _lX 부분에서)
-        import re
+    for key, value in encoder_state.items():
+        if key.startswith("lstm.lstm."):
+            # lstm.lstm.weight_ih_l0 -> lstm.lstm_layers.0.weight_ih_l0
+            # lstm.lstm.weight_ih_l1 -> lstm.lstm_layers.1.weight_ih_l0
+            # 키에서 레이어 번호 추출 (마지막 _lX 부분에서)
+            import re
 
-        match = re.search(r"_l(\d+)$", key)
-        if match:
-            layer_num = match.group(1)
-            # lstm.lstm.weight_ih_l0 -> lstm_layers.0.weight_ih_l0 형태로 변환
-            base_key = key.replace("lstm.lstm.", "").replace(f"_l{layer_num}", "_l0")
-            new_key = f"lstm.lstm_layers.{layer_num}.{base_key}"
+            match = re.search(r"_l(\d+)$", key)
+            if match:
+                layer_num = match.group(1)
+                # lstm.lstm.weight_ih_l0 -> lstm_layers.0.weight_ih_l0 형태로 변환
+                base_key = key.replace("lstm.lstm.", "").replace(
+                    f"_l{layer_num}", "_l0"
+                )
+                new_key = f"lstm.lstm_layers.{layer_num}.{base_key}"
+            else:
+                # 레이어 번호가 없는 경우 그대로 변환
+                new_key = key.replace("lstm.lstm.", "lstm.lstm_layers.0.")
+
+            encoder_mapped_state[new_key] = value
         else:
-            # 레이어 번호가 없는 경우 그대로 변환
-            new_key = key.replace("lstm.lstm.", "lstm.lstm_layers.0.")
-
-        encoder_mapped_state[new_key] = value
-    else:
-        encoder_mapped_state[key] = value
+            encoder_mapped_state[key] = value
 
     encoder.load_state_dict(encoder_mapped_state, strict=False)
 
@@ -304,7 +306,7 @@ def evaluate_file(input_file_path, input_ref_path, output_file_path=None, max_le
         # )
         results.append({"source": sentence, "greedy": greedy_translation})
         if idx % 100 == 0:  # Print samples every 100 sentences
-            print(f"{idx}/{len(sentences)}")
+            print(f"{idx}/{len(sentences)} | latest avg loss: {loss / total_token:.4f}")
             # print(f"src: {sentence}")
             # print(f"ref: {ref_sentences[idx]}")
             # print(f"beam: {beam_translation}")
