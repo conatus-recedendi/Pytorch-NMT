@@ -134,12 +134,7 @@ except RuntimeError as e:
     encoder_state = torch.load("./data/encoder_model_{}".format(id))
     encoder_mapped_state = {}
     for key, value in encoder_state.items():
-        if key.startswith("rnn.") and not key.startswith("rnn.lstm."):
-            # Map old rnn.* keys to new rnn.lstm.* keys
-            new_key = key.replace("rnn.", "rnn.lstm.")
-            encoder_mapped_state[new_key] = value
-        else:
-            encoder_mapped_state[key] = value
+        encoder_mapped_state[key] = value
 
     encoder.load_state_dict(encoder_mapped_state, strict=False)
 

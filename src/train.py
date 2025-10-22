@@ -487,11 +487,7 @@ def load_checkpoint(resume_epoch):
         print("encoder state keys:")
         print(encoder_state.keys())
         for key, value in encoder_state.items():
-            if key.startswith("rnn.") and not key.startswith("rnn.lstm."):
-                new_key = key.replace("rnn.", "rnn.lstm.")
-                encoder_mapped_state[new_key] = value
-            else:
-                encoder_mapped_state[key] = value
+            encoder_mapped_state[key] = value
 
         encoder.load_state_dict(encoder_mapped_state, strict=False)
         print("✅ Encoder checkpoint loaded successfully")
@@ -505,11 +501,11 @@ def load_checkpoint(resume_epoch):
         print("decoder state keys:")
         print(decoder_state.keys())
         for key, value in decoder_state.items():
-            if key.startswith("lstm.") and not key.startswith("lstm.lstm."):
-                new_key = key.replace("lstm.", "lstm.lstm.")
-                decoder_mapped_state[new_key] = value
-            else:
-                decoder_mapped_state[key] = value
+            # if key.startswith("lstm.") and not key.startswith("lstm.lstm."):
+            #     new_key = key.replace("lstm.", "lstm.lstm.")
+            #     decoder_mapped_state[new_key] = value
+            # else:
+            decoder_mapped_state[key] = value
 
         decoder.load_state_dict(decoder_mapped_state, strict=False)
         print("✅ Decoder checkpoint loaded successfully")
