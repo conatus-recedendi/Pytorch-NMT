@@ -22,5 +22,4 @@ python ./src/eval.py \
     --batch_size 1 \
     --device cuda \
     --seed 19 \
-    --reverse True \
-    --input_forward False
+    --reverse True

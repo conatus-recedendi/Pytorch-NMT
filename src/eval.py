@@ -100,6 +100,10 @@ print(
     )
 )
 
+print(
+    "decoder: n_words=%d, embedding_size=%d, hidden_size=%d, n_layers=%d, dropout=%.2f, attn_model=%s, local=%s, clip_forward=%s, clip_backward=%s, input_forward=%s"
+)
+
 decoder = AttentionDecoderRNN(
     args.batch_size,
     output_lang.n_words,
