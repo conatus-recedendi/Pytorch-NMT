@@ -191,10 +191,7 @@ class Attention(nn.Module):
 
             # Apply Gaussian weighting
             # energies = energies * gaussian_weights
-            attention_weights = attention_weights * gaussian_weights.unsqueeze(
-                1
-
-
+            attention_weights = attention_weights * gaussian_weights.unsqueeze(1)
         return attention_weights
 
     def _compute_energies(self, hidden, encoder_outputs):
