@@ -595,7 +595,7 @@ for epoch in range(start_epoch, args.n_epochs + 1):
         for param_group in decoder_optimizer.param_groups:
             param_group["lr"] = lr
 
-    batch_size = 128  # Restore larger batch size for efficiency
+    batch_size = args.batch_size  # Restore larger batch size for efficiency
     # print("hi\n")
     epoch_loss = 0.0
     batch_count = 0
