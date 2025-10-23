@@ -8,6 +8,7 @@
 
 
 python ./src/eval.py \
+    --run_id 12 \
     --attn_model base \
     --embedding_size 1000 \
     --hidden_size 1000 \

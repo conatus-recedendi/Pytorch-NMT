@@ -34,6 +34,7 @@ def pad_sequences_pre(sequences, maxlen, padding_value=0):
 
 # Parse argument for input sentence
 parser = argparse.ArgumentParser()
+parser.add_argument("--run_id", type=int, default=16)
 parser.add_argument(
     "--attn_model", type=str, help="attention type: dot, general, concat"
 )
@@ -121,7 +122,8 @@ decoder = AttentionDecoderRNN(
 encoder.eval()
 decoder.eval()
 
-id = "id=12_attn=%s,local=%s,dropout=d%.2f,epoch=12" % (
+id = "id=%d_attn=%s,local=%s,dropout=d%.2f,epoch=12" % (
+    args.run_id,
     args.attn_model,
     args.local if args.local else "global",
     args.dropout,
