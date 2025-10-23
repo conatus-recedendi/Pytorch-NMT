@@ -105,7 +105,7 @@ class Attention(nn.Module):
             energies = torch.einsum("bsh,bh->bs", encoder_outputs_t, position_weights)
 
         # Apply temperature scaling for numerical stability
-        energies = energies / math.sqrt(self.hidden_size)
+        # energies = energies / math.sqrt(self.hidden_size)
 
         return F.softmax(energies, dim=1).unsqueeze(1)  # [batch_size, 1, seq_len]
 
@@ -140,8 +140,8 @@ class Attention(nn.Module):
 
         # Apply temperature scaling
         # energies = F.softmax(energies, dim=1)
-        energies = energies / math.sqrt(self.hidden_size)
-        attention_weights = F.softmax(energies, dim=1).unsqueeze(1)
+        # energies = energies / math.sqrt(self.hidden_size)
+        # attention_weights = F.softmax(energies, dim=1).unsqueeze(1)
 
         if self.local == "local-m":
             pt = torch.full(
@@ -167,7 +167,9 @@ class Attention(nn.Module):
             attention_weights = attention_weights * window_mask.unsqueeze(
                 1
             )  # [batch_size, 1, seq_len]
-            # Re-normalize attention
+            energies = energies.masked_fill(window_mask == 0, float("-inf"))
+            # Re-normalize attenti
+            # on
         # ✅ Vectorized Gaussian weighting for local-p
         elif self.local == "local-p":
             # softmax
@@ -191,47 +193,8 @@ class Attention(nn.Module):
 
             # Apply Gaussian weighting
             # energies = energies * gaussian_weights
-            attention_weights = attention_weights * gaussian_weights.unsqueeze(1)
+            energies = energies + torch.log(gaussian_weights + 1e-8)
+            # attention_weights = F.softmax(energies, dim=1).unsqueeze(1)
+            # attention_weights = attention_weights * gaussian_weights.unsqueeze(1)
+        attention_weights = F.softmax(energies, dim=1).unsqueeze(1)
         return attention_weights
-
-    def _compute_energies(self, hidden, encoder_outputs):
-        """Optimized compute attention energies for a given hidden state and encoder outputs"""
-        batch_size, hidden_size = hidden.size()
-        seq_len, batch_size, _ = encoder_outputs.size()
-
-        # ✅ Use same optimized computations as _global_attention
-        encoder_outputs_t = encoder_outputs.transpose(
-            0, 1
-        )  # [batch_size, seq_len, hidden_size]
-
-        if self.method == "dot":
-            energies = torch.einsum("bsh,bh->bs", encoder_outputs_t, hidden)
-
-        elif self.method == "general":
-            transformed_hidden = self.attention(hidden)  # [batch_size, hidden_size]
-            energies = torch.einsum("bsh,bh->bs", encoder_outputs_t, transformed_hidden)
-
-        elif self.method == "concat":
-            hidden_expanded = hidden.unsqueeze(1).expand(
-                batch_size, seq_len, hidden_size
-            )
-            concat_input = torch.cat((hidden_expanded, encoder_outputs_t), 2)
-            energy = self.attention(concat_input)
-            energies = torch.einsum("bsh,h->bs", energy, self.other.squeeze(0))
-
-        elif self.method == "location":
-            # Use dynamic location layer
-            if not hasattr(self, "location_layer"):
-                self.location_layer = nn.Linear(
-                    hidden_size, hidden_size, bias=False
-                ).to(hidden.device)
-            position_weights = self.location_layer(hidden)
-            energies = torch.einsum("bsh,bh->bs", encoder_outputs_t, position_weights)
-
-        elif self.method == "base":
-            energies = torch.ones(batch_size, seq_len, device=hidden.device)
-
-        # Apply temperature scaling
-        energies = energies / math.sqrt(self.hidden_size)
-
-        return energies  # [batch_size, seq_len]
