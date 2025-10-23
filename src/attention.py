@@ -158,19 +158,18 @@ class Attention(nn.Module):
                 batch_size, -1
             )  # [batch_size, seq_len]
             pt_expanded = pt.unsqueeze(1)  # [batch_size, 1]
-
             # 윈도우 내부는 1, 외부는 0
             window_mask = (
                 torch.abs(positions - pt_expanded) <= self.window_size
             ).float()  # [batch_size, seq_len]
 
-            attention_weights = attention_weights * window_mask.unsqueeze(
-                1
-            )  # [batch_size, 1, seq_len]
-            energies = energies.masked_fill(window_mask == 0, float("-inf"))
-            # Re-normalize attenti
-            # on
-        # ✅ Vectorized Gaussian weighting for local-p
+            attention_weights = F.softmax(energies, dim=1).unsqueeze(1)
+            return attention_weights.masked_fill(window_mask.unsqueeze(1) == 0, 0.0)
+            # attention_weights = attention_weights * window_mask.unsqueeze(
+            #     1
+            # )  # [batch_size, 1, seq_len]
+            # energies = energies.masked_fill(window_mask == 0, float("-inf"))
+
         elif self.local == "local-p":
             # softmax
             tanh_output = torch.tanh(self.Wp(hidden))  # [batch_size, hidden_size]
@@ -190,11 +189,12 @@ class Attention(nn.Module):
             gaussian_weights = torch.exp(
                 -((positions - pt_expanded) ** 2) / (2 * (D / 2) ** 2)
             )  # [batch_size, seq_len]
-
+            attention_weights = F.softmax(energies, dim=1).unsqueeze(1)
+            return attention_weights * gaussian_weights.unsqueeze(1)
             # Apply Gaussian weighting
             # energies = energies * gaussian_weights
-            energies = energies + torch.log(gaussian_weights + 1e-8)
+            # energies = energies + torch.log(gaussian_weights + 1e-8)
             # attention_weights = F.softmax(energies, dim=1).unsqueeze(1)
             # attention_weights = attention_weights * gaussian_weights.unsqueeze(1)
-        attention_weights = F.softmax(energies, dim=1).unsqueeze(1)
+        # attention_weights = F.softmax(energies, dim=1).unsqueeze(1)
         return attention_weights
