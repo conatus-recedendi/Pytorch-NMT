@@ -198,7 +198,11 @@ def calculate_perplexity(encoder, decoder, test_pairs, criterion, device):
                 # print(decoder_input.shape, decoder_context.shape, decoder_hidden.shape)
                 decoder_output, decoder_context, decoder_hidden, decoder_attention = (
                     decoder(
-                        decoder_input, decoder_context, decoder_hidden, encoder_outputs
+                        decoder_input,
+                        decoder_context,
+                        decoder_hidden,
+                        encoder_outputs,
+                        di,
                     )
                 )
 
@@ -302,7 +306,9 @@ def train(
         all_decoder_outputs = []
         for di in range(target_length):
             decoder_output, decoder_context, decoder_hidden, decoder_attention = (
-                decoder(decoder_input, decoder_context, decoder_hidden, encoder_outputs)
+                decoder(
+                    decoder_input, decoder_context, decoder_hidden, encoder_outputs, di
+                )
             )
             all_decoder_outputs.append(decoder_output)
             decoder_input = target[:, di].unsqueeze(1)  # [batch_size, 1]

@@ -84,7 +84,9 @@ class AttentionDecoderRNN(nn.Module):
                 nn.init.uniform_(param, -0.1, 0.1)
         print(f"AttentionDecoder: Initialized all parameters with U[-0.1, 0.1]")
 
-    def forward(self, input, decoder_context, hidden_state, encoder_outputs):
+    def forward(
+        self, input, decoder_context, hidden_state, encoder_outputs, decoder_step
+    ):
 
         # Run through RNN
         input = input.view(1, -1)
@@ -130,7 +132,9 @@ class AttentionDecoderRNN(nn.Module):
 
         else:
             # Attention model
-            attention_weights = self.attention(rnn_output.squeeze(0), encoder_outputs)
+            attention_weights = self.attention(
+                rnn_output.squeeze(0), encoder_outputs, decoder_step
+            )
 
             # Debug: check dimensions
             # print(f"attention_weights shape: {attention_weights.shape}")

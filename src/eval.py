@@ -359,7 +359,7 @@ def greedy_decode(
     valid_token = 0
     for di in range(max_len):
         decoder_output, decoder_context, decoder_hidden, decoder_attention = decoder(
-            decoder_input, decoder_context, decoder_hidden, encoder_outputs
+            decoder_input, decoder_context, decoder_hidden, encoder_outputs, di
         )
         mask = targets[di] != Language.pad_token
         decoder_output = decoder_output[mask]
@@ -437,7 +437,7 @@ def beam_decode(decoder_context, decoder_hidden, encoder_outputs, max_len, beam_
 
     for i in range(max_len):
         decoder_output, decoder_context, decoder_hidden, _ = decoder(
-            decoder_input, decoder_context, decoder_hidden, encoder_outputs
+            decoder_input, decoder_context, decoder_hidden, encoder_outputs, i
         )
         # output: [1, batch_size * beam_size, vocab_size]
         # -> [batch_size * beam_size, vocab_size]
