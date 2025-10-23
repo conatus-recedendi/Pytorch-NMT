@@ -24,7 +24,7 @@ OMP_NUM_THREADS=20 MKL_NUM_THREADS=20 python src/train.py \
     --language de \
     --device cuda \
     --seed 19 \
-    --batch_size 152 \
+    --batch_size 1024 \
     --reverse True \
     --input_forward True \
     --checkpoint_dir "./data/" \
