@@ -133,6 +133,10 @@ class AttentionDecoderRNN(nn.Module):
             return output, dummy_context, hidden_state, attention_weights
 
         else:
+            assert (
+                encoder_outputs.size(0) == 50,
+                f"[ERROR] 1. encoder_outputs seq_len {encoder_outputs.size(0)} does not match expected 50",
+            )
             # Attention model
             attention_weights, encoder_outputs = self.attention(
                 rnn_output.squeeze(0), encoder_outputs, decoder_step
@@ -145,7 +149,7 @@ class AttentionDecoderRNN(nn.Module):
             ), f"[ERROR] encoder_outputs should be 3D but got {encoder_outputs.dim()}D"
             assert (
                 encoder_outputs.size(1) == 50
-            ), f"[ERROR] encoder_outputs size(1) should be 50 but got {encoder_outputs.size(1)}"
+            ), f"[ERROR] 2. encoder_outputs size(1) should be 50 but got {encoder_outputs.size(1)}"
             # context is weight sum of attention weight and encoder_output
             context = torch.bmm(
                 attention_weights, encoder_outputs.transpose(0, 1)
