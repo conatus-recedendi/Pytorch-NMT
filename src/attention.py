@@ -111,7 +111,7 @@ class Attention(nn.Module):
 
         return (
             F.softmax(energies, dim=1).unsqueeze(1),
-            encoder_outputs_t,
+            encoder_outputs_t.trnnspose(0, 1),
         )  # [batch_size, 1, seq_len],
 
     def _local_attention(self, hidden, encoder_outputs, decoder_step):
