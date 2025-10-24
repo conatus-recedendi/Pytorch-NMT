@@ -27,6 +27,5 @@ OMP_NUM_THREADS=20 MKL_NUM_THREADS=20 python src/train.py \
     --batch_size 512 \
     --reverse True \
     --input_forward True \
-    --checkpoint_dir "./data/" \
-    --resume_epoch 9 
+    --checkpoint_dir "./data/"
  
