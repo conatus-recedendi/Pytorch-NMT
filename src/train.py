@@ -167,7 +167,7 @@ def calculate_perplexity(encoder, decoder, test_pairs, criterion, device):
             # print(type(test_pair_batch), len(test_pair_batch))
             if len(test_pair_batch[0]) == 49:
                 print(
-                    "Found length 49 input in evaluation batch, skipping to maintain consistency.",
+                    "Found length 49 input in evaluation batch, skipping to maintain consistency.\n\n",
                     file=sys.stderr,
                 )
 
@@ -176,7 +176,7 @@ def calculate_perplexity(encoder, decoder, test_pairs, criterion, device):
 
             if input_batch.size(1) != max_len:
                 print(
-                    f"Skipping batch with input length {input_batch.size(1)} (expected {max_len})",
+                    f"Skipping batch with input length {input_batch.size(1)} (expected {max_len})\n\n",
                     file=sys.stderr,
                 )
 
@@ -189,7 +189,7 @@ def calculate_perplexity(encoder, decoder, test_pairs, criterion, device):
             encoder_outputs, encoder_hidden = encoder(input_batch, encoder_hidden)
             if encoder_outputs.size(0) != 50:
                 print(
-                    f"[WARNING] Encoder output seq_len {encoder_outputs.size(0)} does not match expected 50",
+                    f"[WARNING] 1. Encoder output seq_len {encoder_outputs.size(0)} does not match expected 50\n\n",
                     file=sys.stderr,
                 )
 
