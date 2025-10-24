@@ -137,6 +137,21 @@ class AttentionDecoderRNN(nn.Module):
             attention_weights, encoder_outputs = self.attention(
                 rnn_output.squeeze(0), encoder_outputs, decoder_step
             )  # [batch_size, 1, seq_len]
+            seq_len = encoder_outputs.size(0)
+            if attention_weights.size(2) != seq_len:
+                # Truncate or pad attention weights to match encoder sequence length
+                if attention_weights.size(2) > seq_len:
+                    attention_weights = attention_weights[:, :, :seq_len]
+                else:
+                    # Pad with zeros if attention weights are shorter
+                    pad_size = seq_len - attention_weights.size(2)
+                    padding = torch.zeros(
+                        attention_weights.size(0),
+                        attention_weights.size(1),
+                        pad_size,
+                        device=attention_weights.device,
+                    )
+                    attention_weights = torch.cat([attention_weights, padding], dim=2)
 
             # context is weight sum of attention weight and encoder_output
             context = torch.bmm(
