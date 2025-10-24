@@ -111,7 +111,7 @@ class Attention(nn.Module):
 
         return (
             F.softmax(energies, dim=1).unsqueeze(1),
-            encoder_outputs,
+            encoder_outputs_t,
         )  # [batch_size, 1, seq_len],
 
     def _local_attention(self, hidden, encoder_outputs, decoder_step):
@@ -257,5 +257,5 @@ class Attention(nn.Module):
             F.softmax(
                 torch.zeros(batch_size, seq_len, device=hidden.device), dim=1
             ).unsqueeze(1),
-            encoder_outputs,
+            encoder_outputs_t,
         )
