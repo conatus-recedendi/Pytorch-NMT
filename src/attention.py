@@ -161,7 +161,13 @@ class Attention(nn.Module):
             # print(
             #     f"pt_expanded: {pt_expanded.shape}", file=sys.stderr
             # )  # Debugging line
-            src_position = torch.floor(pt).long()  # [batch_size]
+            src_position = torch.floor(
+                pt
+            ).long()  # [batch_size] to [batch_size, seq_len]
+            src_position = src_position.unsqueeze(1).expand(
+                batch_size, seq_len
+            )  # [batch_size, seq_len]
+
             # print(
             #     f"src_position: {src_position.shape}", file=sys.stderr
             # )  # Debugging line
@@ -226,6 +232,8 @@ class Attention(nn.Module):
             gaussian_weights = torch.exp(
                 -((src_position - pt_expanded) ** 2) / (2 * (D / 2) ** 2)
             )  # [batch_size, seq_len]
+            # align: [batch_size, seq_len]
+            # gaussian_weights: [batch_size, seq_len]
             align_vector = align * gaussian_weights  # [batch_size, seq_len]
 
             return align_vector
@@ -236,4 +244,4 @@ class Attention(nn.Module):
             # attention_weights = F.softmax(energies, dim=1).unsqueeze(1)
             # attention_weights = attention_weights * gaussian_weights.unsqueeze(1)
         # attention_weights = F.softmax(energies, dim=1).unsqueeze(1)
-        return attention_weights
+        return None
