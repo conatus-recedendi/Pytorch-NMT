@@ -106,7 +106,7 @@ class Attention(nn.Module):
             energies = torch.einsum("bsh,bh->bs", encoder_outputs_t, position_weights)
 
         # Apply temperature scaling for numerical stability
-        # energies = energies / math.sqrt(self.hidden_size)
+        energies = energies / math.sqrt(self.hidden_size)
 
         return (
             F.softmax(energies, dim=1).unsqueeze(1),
