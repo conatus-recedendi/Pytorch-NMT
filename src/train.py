@@ -177,6 +177,8 @@ def calculate_perplexity(encoder, decoder, test_pairs, criterion, device):
             input_batch = input_batch.squeeze(-1)
             encoder_outputs, encoder_hidden = encoder(input_batch, encoder_hidden)
 
+            assert encoder_outputs.size(0) == max_len
+
             # Decoder
             # <EOS> 토큰으로 초기화
             decoder_input = (
