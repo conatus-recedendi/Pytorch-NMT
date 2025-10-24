@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import math
+import sys
 
 
 class Attention(nn.Module):
@@ -155,15 +156,27 @@ class Attention(nn.Module):
                 -1
             )  # [batch_size]
             pt = (seq_len - 1) * torch.sigmoid(sigmoid_input) + 1  # [batch_size]
+            print(f"pt: {pt.shape}", file=sys.stderr)  # Debugging line
             pt_expanded = pt.unsqueeze(1)  # [batch_size, 1]
+            print(
+                f"pt_expanded: {pt_expanded.shape}", file=sys.stderr
+            )  # Debugging line
             src_position = torch.floor(pt).long()  # [batch_size]
+            print(
+                f"src_position: {src_position.shape}", file=sys.stderr
+            )  # Debugging line
 
             window_mask = (
                 torch.abs(src_position - pt_expanded) <= self.window_size
             ).float()  # [batch_size, seq_len]
-
+            print(
+                f"window_mask: {window_mask.shape}", file=sys.stderr
+            )  # Debugging line
+            print(
+                f"encoder_outputs_t before masking: {encoder_outputs_t.shape}",
+                file=sys.stderr,
+            )  # Debugging line
             # encoder_outputs_t [batch_size, seq_len, hidden_size]
-
             encoder_outputs_t = encoder_outputs_t.masked_fill(
                 window_mask.unsqueeze(2) == 0, 0.0
             )
