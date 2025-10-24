@@ -102,8 +102,9 @@ class Attention(nn.Module):
         elif self.method == "location":
             # ✅ Dynamic location attention (no fixed max_seq_len)
             # Use linear layer to generate position-dependent weights
-            position_weights = self.location_layer(hidden)  # [batch_size, hidden_size]
-            energies = torch.einsum("bsh,bh->bs", encoder_outputs_t, position_weights)
+            # position_weights = self.location_layer(hidden)  # [batch_size, hidden_size]
+            # energies = torch.einsum("bsh,bh->bs", encoder_outputs_t, position_weights)
+            energies = self.location_layer(hidden)
 
         # Apply temperature scaling for numerical stability
         energies = energies / math.sqrt(self.hidden_size)
