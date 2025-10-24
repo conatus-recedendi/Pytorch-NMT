@@ -140,7 +140,13 @@ class Attention(nn.Module):
 
             pt_expanded = pt.unsqueeze(1)  # [batch_size, 1]
             src_position = torch.floor(pt).long()  # [batch_size]
-            window_mask = window_mask.masked_fill(encoder_outputs_t == 0, 0.0)
+            window_mask = (
+                torch.abs(src_position - pt_expanded) <= self.window_size
+            ).float()  # [batch_size, seq_len]
+
+            encoder_outputs_t = encoder_outputs_t.masked_fill(
+                window_mask.unsqueeze(2) == 0, 0.0
+            )
 
         elif self.local == "local-p":
             # softmax
@@ -153,7 +159,7 @@ class Attention(nn.Module):
             src_position = torch.floor(pt).long()  # [batch_size]
 
             window_mask = (
-                torch.abs(positions - pt_expanded) <= self.window_size
+                torch.abs(src_position - pt_expanded) <= self.window_size
             ).float()  # [batch_size, seq_len]
 
             # encoder_outputs_t [batch_size, seq_len, hidden_size]
@@ -192,12 +198,9 @@ class Attention(nn.Module):
 
         if self.local == "local-m":
             # 윈도우 내부는 1, 외부는 0
-            window_mask = (
-                torch.abs(src_position - pt_expanded) <= self.window_size
-            ).float()  # [batch_size, seq_len]
 
-            attention_weights = F.softmax(energies, dim=1).unsqueeze(1)
-            return attention_weights.masked_fill(window_mask.unsqueeze(1) == 0, 0.0)
+            align_vector = align
+            return align_vector
             # attention_weights = attention_weights * window_mask.unsqueeze(
             #     1
             # )  # [batch_size, 1, seq_len]
