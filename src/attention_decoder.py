@@ -144,8 +144,8 @@ class AttentionDecoderRNN(nn.Module):
                 encoder_outputs.dim() == 3
             ), f"[ERROR] encoder_outputs should be 3D but got {encoder_outputs.dim()}D"
             assert (
-                encoder_outputs.size(2) == 50
-            ), f"[ERROR] encoder_outputs size(2) should be 500 but got {encoder_outputs.size(2)}"
+                encoder_outputs.size(1) == 50
+            ), f"[ERROR] encoder_outputs size(1) should be 50 but got {encoder_outputs.size(1)}"
             # context is weight sum of attention weight and encoder_output
             context = torch.bmm(
                 attention_weights, encoder_outputs.transpose(0, 1)
