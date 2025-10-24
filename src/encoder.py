@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import sys
 
 
 class EncoderRNN(nn.Module):
@@ -69,6 +70,11 @@ class EncoderRNN(nn.Module):
         output, _ = nn.utils.rnn.pad_packed_sequence(
             packed_output, batch_first=False, padding_value=0.0
         )
+        if output.size(0) != 50:
+            print(
+                f"[WARNING] Encoder output seq_len {output.size(0)} does not match expected 50",
+                file=sys.stderr,
+            )
 
         # Manual clipping for hidden states (additional safety)
         if self.clip_forward is not None:
