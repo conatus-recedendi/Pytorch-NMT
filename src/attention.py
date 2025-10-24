@@ -193,13 +193,13 @@ class Attention(nn.Module):
         if self.method == "dot":
             # energies = torch.bmm(encoder_outputs_t, hidden.unsqueeze(2)).squeeze(2)
             energies = torch.einsum("bsh,bh->bs", encoder_outputs_t, hidden)
-            align = F.softmax(energies, dim=1)
+            # align = F.softmax(energies, dim=1)
         elif self.method == "general":
             # transformed = self.attention(encoder_outputs_t)
             # energies = torch.bmm(transformed, hidden.unsqueeze(2)).squeeze(2)
             transformed_hidden = self.attention(hidden)  # [batch_size, hidden_size]
             energies = torch.einsum("bsh,bh->bs", encoder_outputs_t, transformed_hidden)
-            align = F.softmax(energies, dim=1)
+            # align = F.softmax(energies, dim=1)
         elif self.method == "concat":
             hidden_expanded = hidden.unsqueeze(1).expand(
                 batch_size, seq_len, hidden_size
@@ -207,11 +207,11 @@ class Attention(nn.Module):
             concat_input = torch.cat((hidden_expanded, encoder_outputs_t), 2)
             energy = self.attention(concat_input)
             energies = torch.einsum("bsh,h->bs", energy, self.other.squeeze(0))
-            align = F.softmax(energies, dim=1)
+            # align = F.softmax(energies, dim=1)
         elif self.method == "location":
             energies = self.location_layer(hidden)  # [batch_size, hidden_size]
             # energies = torch.einsum("bsh,bh->bs", encoder_outputs_t, position_weights)
-            align = F.softmax(energies, dim=1)
+            # align = F.softmax(energies, dim=1)
 
         # Apply temperature scaling
         # energies = F.softmax(energies, dim=1)
@@ -220,7 +220,8 @@ class Attention(nn.Module):
 
         if self.local == "local-m":
             # 윈도우 내부는 1, 외부는 0
-            align_vector = align
+            # align_vector = align
+            align_vector = F.softmax(energies, dim=1)
             return (
                 align_vector.unsqueeze(1),
                 encoder_outputs_t.transpose(0, 1),
@@ -234,7 +235,9 @@ class Attention(nn.Module):
             )  # [batch_size, seq_len]
             # align: [batch_size, seq_len]
             # gaussian_weights: [batch_size, seq_len]
-            align_vector = align * gaussian_weights  # [batch_size, seq_len]
+            # align = F.softmax(energies, dim=1)
+            align_vector = energies * gaussian_weights  # [batch_size, seq_len]
+            align_vector = F.softmax(align_vector, dim=1)
 
             return (
                 align_vector.unsqueeze(1),
