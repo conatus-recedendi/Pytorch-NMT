@@ -137,26 +137,6 @@ class AttentionDecoderRNN(nn.Module):
             attention_weights, encoder_outputs = self.attention(
                 rnn_output.squeeze(0), encoder_outputs, decoder_step
             )  # [batch_size, 1, seq_len]
-            if attention_weights.size(2) != self.seq_len:
-                attention_weights = F.pad(
-                    attention_weights, (0, self.seq_len - attention_weights.size(2))
-                )
-
-            # Debug: check dimensions
-            # print(
-            #     f"attention_weights shape: {attention_weights.shape}", file=sys.stderr
-            # )
-            # print(f"encoder_outputs shape: {encoder_outputs.shape}", file=sys.stderr)
-            # print(
-            #     f"encoder_outputs.transpose(0,1) shape: {encoder_outputs.transpose(0,1).shape}",
-            #     file=sys.stderr,
-            # )
-
-            # ✅ Ensure attention_weights is 3D for bmm
-            if encoder_outputs.size(2) != self.seq_len:
-                encoder_outputs = F.pad(
-                    encoder_outputs, (2, self.seq_len - encoder_outputs.size(2))
-                )
 
             # context is weight sum of attention weight and encoder_output
             context = torch.bmm(
