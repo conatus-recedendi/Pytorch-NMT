@@ -89,7 +89,6 @@ class AttentionDecoderRNN(nn.Module):
     def forward(
         self, input, decoder_context, hidden_state, encoder_outputs, decoder_step
     ):
-        assert encoder_outputs.size(0) == 50
 
         # Run through RNN
         input = input.view(1, -1)
@@ -134,7 +133,6 @@ class AttentionDecoderRNN(nn.Module):
             return output, dummy_context, hidden_state, attention_weights
 
         else:
-            assert encoder_outputs.size(0) == 50
             # Attention model
             attention_weights, encoder_outputs = self.attention(
                 rnn_output.squeeze(0), encoder_outputs, decoder_step

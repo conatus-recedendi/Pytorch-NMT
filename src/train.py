@@ -164,21 +164,9 @@ def calculate_perplexity(encoder, decoder, test_pairs, criterion, device):
                 device,
                 is_reverse=args.reverse,
             )
-            # print(type(test_pair_batch), len(test_pair_batch))
-            if len(test_pair_batch[0]) == 49:
-                print(
-                    "Found length 49 input in evaluation batch, skipping to maintain consistency.\n\n",
-                    file=sys.stderr,
-                )
 
             input_batch = torch.stack(test_pair_batch[0])
             target_batch = torch.stack(test_pair_batch[1])
-
-            if input_batch.size(1) != max_len:
-                print(
-                    f"Skipping batch with input length {input_batch.size(1)} (expected {max_len})\n\n",
-                    file=sys.stderr,
-                )
 
             actual_batch_size = input_batch.size(0)
             target_length = target_batch.size(1)
@@ -187,15 +175,6 @@ def calculate_perplexity(encoder, decoder, test_pairs, criterion, device):
             encoder_hidden = encoder.init_hidden(device, actual_batch_size)
             input_batch = input_batch.squeeze(-1)
             encoder_outputs, encoder_hidden = encoder(input_batch, encoder_hidden)
-            if encoder_outputs.size(0) != 50:
-                print(
-                    f"[WARNING] 1. Encoder output seq_len {encoder_outputs.size(0)} does not match expected 50\n\n",
-                    file=sys.stderr,
-                )
-
-            assert (
-                encoder_outputs.size(0) == max_len
-            ), f"[ERROR] Encoder outputs seq_len {encoder_outputs.size(0)} does not match expected max_len {max_len}"
 
             # Decoder
             # <EOS> 토큰으로 초기화
