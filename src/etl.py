@@ -102,10 +102,10 @@ def tensor_from_sentence(lang, sentence, device="cpu", is_src=True, is_reverse=F
             indexes = (
                 indexes
                 + [Language.eos_token]
-                + [Language.pad_token] * (max_length - len(indexes) - 1)
+                + [Language.pad_token] * (max_len - len(indexes) - 1)
             )
         else:
-            indexes = indexes[: max_length - 1] + [Language.eos_token]
+            indexes = indexes[: max_len - 1] + [Language.eos_token]
     tensor = torch.LongTensor(indexes).view(-1, 1).to(device)
     return tensor
 
