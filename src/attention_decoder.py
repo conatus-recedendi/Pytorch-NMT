@@ -139,10 +139,10 @@ class AttentionDecoderRNN(nn.Module):
             )  # [batch_size, 1, seq_len]
 
             # Debug: check dimensions
-            print(
-                f"attention_weights shape: {attention_weights.shape}", file=sys.stderr
-            )
-            print(f"encoder_outputs shape: {encoder_outputs.shape}", file=sys.stderr)
+            # print(
+            #     f"attention_weights shape: {attention_weights.shape}", file=sys.stderr
+            # )
+            # print(f"encoder_outputs shape: {encoder_outputs.shape}", file=sys.stderr)
 
             # ✅ Ensure attention_weights is 3D for bmm
             if attention_weights.dim() == 2:
