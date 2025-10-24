@@ -4,6 +4,8 @@ import torch.nn.functional as F
 from attention import Attention
 from clipped_lstm import ClippedLSTM
 
+import sys
+
 
 class AttentionDecoderRNN(nn.Module):
     """Recurrent neural network that makes use of gated recurrent units to translate encoded input using attention."""
@@ -134,11 +136,19 @@ class AttentionDecoderRNN(nn.Module):
             # Attention model
             attention_weights = self.attention(
                 rnn_output.squeeze(0), encoder_outputs, decoder_step
-            )
+            )  # [batch_size, 1, seq_len]
 
             # Debug: check dimensions
-            # print(f"attention_weights shape: {attention_weights.shape}")
-            # print(f"encoder_outputs shape: {encoder_outputs.shape}")
+            print(
+                f"attention_weights shape: {attention_weights.shape}", file=sys.stderr
+            )
+            print(f"encoder_outputs shape: {encoder_outputs.shape}", file=sys.stderr)
+
+            # ✅ Ensure attention_weights is 3D for bmm
+            if attention_weights.dim() == 2:
+                attention_weights = attention_weights.unsqueeze(
+                    1
+                )  # [batch_size, 1, seq_len]
 
             # context is weight sum of attention weight and encoder_output
             context = torch.bmm(
