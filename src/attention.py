@@ -13,6 +13,7 @@ class Attention(nn.Module):
         self.method = method
         self.hidden_size = hidden_size
         self.local = local  # None, 'local-m', 'local-p'
+        self.seq_len = 50
 
         # Local attention window size (D in paper)
         self.window_size = 10  # 2*D+1 = 21 window
@@ -25,9 +26,7 @@ class Attention(nn.Module):
             self.other = nn.Parameter(torch.FloatTensor(1, self.hidden_size))
         elif self.method == "location":
             # Location attention: use dynamic linear layer instead of fixed weights
-            self.location_layer = nn.Linear(
-                self.hidden_size, self.hidden_size, bias=False
-            )
+            self.location_layer = nn.Linear(self.hidden_size, self.seq_len, bias=False)
         elif self.method == "base":
             pass
 
@@ -66,14 +65,17 @@ class Attention(nn.Module):
 
         # Check if using local attention
         if self.local is not None:
+            print("Using local attention mechanism.", file=sys.stderr)
             return self._local_attention(hidden, encoder_outputs, decoder_step)
         else:
+            print("Using global attention mechanism.", file=sys.stderr)
             return self._global_attention(hidden, encoder_outputs)
 
     def _global_attention(self, hidden, encoder_outputs):
         """Optimized global attention mechanism"""
         batch_size, hidden_size = hidden.size()
         seq_len, batch_size, _ = encoder_outputs.size()
+        self.seq_len = seq_len
 
         # ✅ Optimized vectorized attention computation
         encoder_outputs_t = encoder_outputs.transpose(
@@ -104,7 +106,7 @@ class Attention(nn.Module):
             # Use linear layer to generate position-dependent weights
             # position_weights = self.location_layer(hidden)  # [batch_size, hidden_size]
             # energies = torch.einsum("bsh,bh->bs", encoder_outputs_t, position_weights)
-            energies = self.location_layer(hidden)
+            energies = self.location_layer(hidden)  # [batch_size, hidden_size]
 
         # Apply temperature scaling for numerical stability
         energies = energies / math.sqrt(self.hidden_size)
