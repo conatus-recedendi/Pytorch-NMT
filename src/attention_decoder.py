@@ -109,6 +109,11 @@ class AttentionDecoderRNN(nn.Module):
             rnn_input, hidden_state
         )  # rnn_output: [1, batch, hidden_size]
 
+        if attention_weights.size(2) != self.seq_len:
+            attention_weights = F.pad(
+                attention_weights, (0, self.seq_len - attention_weights.size(2))
+            )
+
         if self.clip_forward is not None:
             # LSTM hidden_state is (hidden, cell) tuple
             # Apply clipping to both hidden state and cell state
