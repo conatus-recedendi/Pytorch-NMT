@@ -108,7 +108,7 @@ class Attention(nn.Module):
             energies = self.location_layer(hidden)  # [batch_size, hidden_size]
 
         # Apply temperature scaling for numerical stability
-        energies = energies / math.sqrt(self.hidden_size)
+        # energies = energies / math.sqrt(self.hidden_size)
 
         return (
             F.softmax(energies, dim=1).unsqueeze(1),
@@ -231,6 +231,9 @@ class Attention(nn.Module):
 
         elif self.local == "local-p":
             # Vectorized Gaussian calculation
+            # 두가지 구현 방법 모두 존재
+            # 1) gaussian_weight 더하고 softmax (이후 개선)
+            # 2) softmax 적용하고 gaussisna_weight (EMNLP 2015)
             D = self.window_size
             gaussian_weights = torch.exp(
                 -((src_position - pt_expanded) ** 2) / (2 * (D / 2) ** 2)
