@@ -65,10 +65,10 @@ class Attention(nn.Module):
 
         # Check if using local attention
         if self.local is not None:
-            print("Using local attention mechanism.", file=sys.stderr)
+            # print("Using local attention mechanism.", file=sys.stderr)
             return self._local_attention(hidden, encoder_outputs, decoder_step)
         else:
-            print("Using global attention mechanism.", file=sys.stderr)
+            # print("Using global attention mechanism.", file=sys.stderr)
             return self._global_attention(hidden, encoder_outputs)
 
     def _global_attention(self, hidden, encoder_outputs):
