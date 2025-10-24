@@ -109,11 +109,6 @@ class AttentionDecoderRNN(nn.Module):
             rnn_input, hidden_state
         )  # rnn_output: [1, batch, hidden_size]
 
-        if attention_weights.size(2) != self.seq_len:
-            attention_weights = F.pad(
-                attention_weights, (0, self.seq_len - attention_weights.size(2))
-            )
-
         if self.clip_forward is not None:
             # LSTM hidden_state is (hidden, cell) tuple
             # Apply clipping to both hidden state and cell state
@@ -142,6 +137,10 @@ class AttentionDecoderRNN(nn.Module):
             attention_weights, encoder_outputs = self.attention(
                 rnn_output.squeeze(0), encoder_outputs, decoder_step
             )  # [batch_size, 1, seq_len]
+            if attention_weights.size(2) != self.seq_len:
+                attention_weights = F.pad(
+                    attention_weights, (0, self.seq_len - attention_weights.size(2))
+                )
 
             # Debug: check dimensions
             # print(
@@ -154,10 +153,10 @@ class AttentionDecoderRNN(nn.Module):
             # )
 
             # ✅ Ensure attention_weights is 3D for bmm
-            if attention_weights.dim() == 2:
-                attention_weights = attention_weights.unsqueeze(
-                    1
-                )  # [batch_size, 1, seq_len]
+            if encoder_outputs.size(2) != self.seq_len:
+                encoder_outputs = F.pad(
+                    encoder_outputs, (2, self.seq_len - encoder_outputs.size(2))
+                )
 
             # context is weight sum of attention weight and encoder_output
             context = torch.bmm(
