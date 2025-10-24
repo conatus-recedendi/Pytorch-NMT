@@ -75,11 +75,13 @@ class Attention(nn.Module):
         """Optimized global attention mechanism"""
         batch_size, hidden_size = hidden.size()
         seq_len, batch_size, _ = encoder_outputs.size()
+        assert encoder_outputs.size(0) == 50
 
         # ✅ Optimized vectorized attention computation
         encoder_outputs_t = encoder_outputs.transpose(
             0, 1
         )  # [batch_size, seq_len, hidden_size]
+        assert encoder_outputs_t.size(1) == 50
 
         if self.method == "dot":
             # ✅ Efficient einsum operation
@@ -109,6 +111,7 @@ class Attention(nn.Module):
 
         # Apply temperature scaling for numerical stability
         energies = energies / math.sqrt(self.hidden_size)
+        assert encoder_outputs_t.size(1) == 50
 
         return (
             F.softmax(energies, dim=1).unsqueeze(1),
