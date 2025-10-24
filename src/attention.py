@@ -189,7 +189,15 @@ class Attention(nn.Module):
             gaussian_weights = torch.exp(
                 -((positions - pt_expanded) ** 2) / (2 * (D / 2) ** 2)
             )  # [batch_size, seq_len]
+
+            window_mask = (
+                torch.abs(positions - pt_expanded) <= self.window_size
+            ).float()  # [batch_size, seq_len]
+
             attention_weights = F.softmax(energies, dim=1).unsqueeze(1)
+            attention_weights = attention_weights.masked_fill(
+                window_mask.unsqueeze(1) < 0.5, 0.0
+            )
             return attention_weights * gaussian_weights.unsqueeze(1)
             # Apply Gaussian weighting
             # energies = energies * gaussian_weights

@@ -132,7 +132,7 @@ class AttentionDecoderRNN(nn.Module):
 
         else:
             # Attention model
-            attention_weights = self.attention(
+            attention_weights, encoder_outputs = self.attention(
                 rnn_output.squeeze(0), encoder_outputs, decoder_step
             )
 
