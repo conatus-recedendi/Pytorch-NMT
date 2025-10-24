@@ -137,6 +137,7 @@ class AttentionDecoderRNN(nn.Module):
                 encoder_outputs.size(0) == 50,
                 f"[ERROR] 1. encoder_outputs seq_len {encoder_outputs.size(0)} does not match expected 50",
             )
+            original_encoder_outputs = encoder_outputs
             # Attention model
             attention_weights, encoder_outputs = self.attention(
                 rnn_output.squeeze(0), encoder_outputs, decoder_step
@@ -152,7 +153,7 @@ class AttentionDecoderRNN(nn.Module):
             ), f"[ERROR] 2. encoder_outputs size(0) should be 50 but got {encoder_outputs.size(0)}"
             # context is weight sum of attention weight and encoder_output
             context = torch.bmm(
-                attention_weights, encoder_outputs.transpose(0, 1)
+                attention_weights, original_encoder_outputs.transpose(0, 1)
             )  # [batch_size, 1, hidden_size]
 
             context = context.transpose(0, 1)  # [1, -1, hidden_size]
