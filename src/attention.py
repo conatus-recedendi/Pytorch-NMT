@@ -75,7 +75,6 @@ class Attention(nn.Module):
         """Optimized global attention mechanism"""
         batch_size, hidden_size = hidden.size()
         seq_len, batch_size, _ = encoder_outputs.size()
-        self.seq_len = seq_len
 
         # ✅ Optimized vectorized attention computation
         encoder_outputs_t = encoder_outputs.transpose(
@@ -95,7 +94,7 @@ class Attention(nn.Module):
         elif self.method == "concat":
             # ✅ Optimized concat attention
             hidden_expanded = hidden.unsqueeze(1).expand(
-                batch_size, seq_len, hidden_size
+                batch_size, self.seq_len, hidden_size
             )
             concat_input = torch.cat((hidden_expanded, encoder_outputs_t), 2)
             energy = self.attention(concat_input)  # [batch_size, seq_len, hidden_size]
