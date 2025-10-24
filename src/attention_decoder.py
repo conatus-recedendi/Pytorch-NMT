@@ -2,9 +2,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from attention import Attention
-from clipped_lstm import ClippedLSTM
-
-import sys
+from clipped_lstm import ClippedLST        else:
+            # Attention model
+            attention_weights = self.attention(
+                rnn_output.squeeze(0), encoder_outputs, decoder_step
+            )  # [batch_size, 1, seq_len]port sys
 
 
 class AttentionDecoderRNN(nn.Module):
@@ -134,7 +136,7 @@ class AttentionDecoderRNN(nn.Module):
 
         else:
             # Attention model
-            attention_weights = self.attention(
+            attention_weights, encoder_outputs = self.attention(
                 rnn_output.squeeze(0), encoder_outputs, decoder_step
             )  # [batch_size, 1, seq_len]
 
