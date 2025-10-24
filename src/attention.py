@@ -124,7 +124,7 @@ class Attention(nn.Module):
         positions = positions.unsqueeze(0).expand(
             batch_size, -1
         )  # [batch_size, seq_len]
-        src_position = torch.floor(pt).long()  # [batch_size]
+        src_position = None  # [batch_size]
 
         # initilaize mask
         window_mask = torch.ones(
@@ -139,6 +139,7 @@ class Attention(nn.Module):
             )  # [batch_size]
 
             pt_expanded = pt.unsqueeze(1)  # [batch_size, 1]
+            src_position = torch.floor(pt).long()  # [batch_size]
             window_mask = window_mask.masked_fill(encoder_outputs_t == 0, 0.0)
 
         elif self.local == "local-p":
@@ -149,6 +150,7 @@ class Attention(nn.Module):
             )  # [batch_size]
             pt = (seq_len - 1) * torch.sigmoid(sigmoid_input) + 1  # [batch_size]
             pt_expanded = pt.unsqueeze(1)  # [batch_size, 1]
+            src_position = torch.floor(pt).long()  # [batch_size]
 
             window_mask = (
                 torch.abs(positions - pt_expanded) <= self.window_size
@@ -191,7 +193,7 @@ class Attention(nn.Module):
         if self.local == "local-m":
             # 윈도우 내부는 1, 외부는 0
             window_mask = (
-                torch.abs(positions - pt_expanded) <= self.window_size
+                torch.abs(src_position - pt_expanded) <= self.window_size
             ).float()  # [batch_size, seq_len]
 
             attention_weights = F.softmax(energies, dim=1).unsqueeze(1)
@@ -206,7 +208,7 @@ class Attention(nn.Module):
             # Vectorized Gaussian calculation
             D = self.window_size
             gaussian_weights = torch.exp(
-                -((positions - pt_expanded) ** 2) / (2 * (D / 2) ** 2)
+                -((src_position - pt_expanded) ** 2) / (2 * (D / 2) ** 2)
             )  # [batch_size, seq_len]
             align_vector = align * gaussian_weights  # [batch_size, seq_len]
 
