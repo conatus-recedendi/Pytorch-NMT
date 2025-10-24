@@ -177,7 +177,9 @@ def calculate_perplexity(encoder, decoder, test_pairs, criterion, device):
             input_batch = input_batch.squeeze(-1)
             encoder_outputs, encoder_hidden = encoder(input_batch, encoder_hidden)
 
-            assert encoder_outputs.size(0) == max_len
+            assert (
+                encoder_outputs.size(0) == max_len
+            ), f"[ERROR] Encoder outputs seq_len {encoder_outputs.size(0)} does not match expected max_len {max_len}"
 
             # Decoder
             # <EOS> 토큰으로 초기화
@@ -198,6 +200,9 @@ def calculate_perplexity(encoder, decoder, test_pairs, criterion, device):
             all_decoder_outputs = []
             for di in range(target_length):
                 # print(decoder_input.shape, decoder_context.shape, decoder_hidden.shape)
+                assert (
+                    decoder_input.size(0) == actual_batch_size
+                ), f"[ERROR] Decoder input batch size {decoder_input.size(0)} does not match actual batch size {actual_batch_size}"
                 decoder_output, decoder_context, decoder_hidden, decoder_attention = (
                     decoder(
                         decoder_input,
