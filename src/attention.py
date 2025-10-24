@@ -108,7 +108,10 @@ class Attention(nn.Module):
         # Apply temperature scaling for numerical stability
         # energies = energies / math.sqrt(self.hidden_size)
 
-        return F.softmax(energies, dim=1).unsqueeze(1)  # [batch_size, 1, seq_len]
+        return (
+            F.softmax(energies, dim=1).unsqueeze(1),
+            encoder_outputs,
+        )  # [batch_size, 1, seq_len],
 
     def _local_attention(self, hidden, encoder_outputs, decoder_step):
         """Optimized vectorized local attention mechanism"""
@@ -217,16 +220,12 @@ class Attention(nn.Module):
 
         if self.local == "local-m":
             # 윈도우 내부는 1, 외부는 0
-
             align_vector = align
-            return align_vector
-            # attention_weights = attention_weights * window_mask.unsqueeze(
-            #     1
-            # )  # [batch_size, 1, seq_len]
-            # energies = energies.masked_fill(window_mask == 0, float("-inf"))
+            return align_vector.unsqueeze(1), encoder_outputs_t.transpose(
+                0, 1
+            )  # ✅ [batch_size, 1, seq_len]
 
         elif self.local == "local-p":
-
             # Vectorized Gaussian calculation
             D = self.window_size
             gaussian_weights = torch.exp(
@@ -236,7 +235,9 @@ class Attention(nn.Module):
             # gaussian_weights: [batch_size, seq_len]
             align_vector = align * gaussian_weights  # [batch_size, seq_len]
 
-            return align_vector
+            return align_vector.unsqueeze(1), encoder_outputs_t.transpose(
+                0, 1
+            )  # ✅ [batch_size, 1, seq_len]
 
             # Apply Gaussian weighting
             # energies = energies * gaussian_weights
@@ -244,4 +245,8 @@ class Attention(nn.Module):
             # attention_weights = F.softmax(energies, dim=1).unsqueeze(1)
             # attention_weights = attention_weights * gaussian_weights.unsqueeze(1)
         # attention_weights = F.softmax(energies, dim=1).unsqueeze(1)
-        return None
+
+        # ✅ Default fallback (should not reach here)
+        return F.softmax(
+            torch.zeros(batch_size, seq_len, device=hidden.device), dim=1
+        ).unsqueeze(1)
