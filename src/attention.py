@@ -119,14 +119,57 @@ class Attention(nn.Module):
             0, 1
         )  # [batch_size, seq_len, hidden_size]
 
+        # Position Information
+        positions = torch.arange(seq_len, dtype=torch.float, device=hidden.device)
+        positions = positions.unsqueeze(0).expand(
+            batch_size, -1
+        )  # [batch_size, seq_len]
+        src_position = torch.floor(pt).long()  # [batch_size]
+
+        # initilaize mask
+        window_mask = torch.ones(
+            (batch_size, seq_len), device=hidden.device
+        ).float()  # [batch_size, seq_len]
+
+        if self.local == "local-m":
+            # TODO: encoder_outputs_t 를 마스킹
+
+            pt = torch.full(
+                (batch_size,), decoder_step, dtype=torch.float, device=hidden.device
+            )  # [batch_size]
+
+            pt_expanded = pt.unsqueeze(1)  # [batch_size, 1]
+            window_mask = window_mask.masked_fill(encoder_outputs_t == 0, 0.0)
+
+        elif self.local == "local-p":
+            # softmax
+            tanh_output = torch.tanh(self.Wp(hidden))  # [batch_size, hidden_size]
+            sigmoid_input = torch.matmul(tanh_output, self.vp).squeeze(
+                -1
+            )  # [batch_size]
+            pt = (seq_len - 1) * torch.sigmoid(sigmoid_input) + 1  # [batch_size]
+            pt_expanded = pt.unsqueeze(1)  # [batch_size, 1]
+
+            window_mask = (
+                torch.abs(positions - pt_expanded) <= self.window_size
+            ).float()  # [batch_size, seq_len]
+
+            # encoder_outputs_t [batch_size, seq_len, hidden_size]
+
+            encoder_outputs_t = encoder_outputs_t.masked_fill(
+                window_mask.unsqueeze(2) == 0, 0.0
+            )
+
         if self.method == "dot":
             # energies = torch.bmm(encoder_outputs_t, hidden.unsqueeze(2)).squeeze(2)
             energies = torch.einsum("bsh,bh->bs", encoder_outputs_t, hidden)
+            align = F.softmax(energies, dim=1)
         elif self.method == "general":
             # transformed = self.attention(encoder_outputs_t)
             # energies = torch.bmm(transformed, hidden.unsqueeze(2)).squeeze(2)
             transformed_hidden = self.attention(hidden)  # [batch_size, hidden_size]
             energies = torch.einsum("bsh,bh->bs", encoder_outputs_t, transformed_hidden)
+            align = F.softmax(energies, dim=1)
         elif self.method == "concat":
             hidden_expanded = hidden.unsqueeze(1).expand(
                 batch_size, seq_len, hidden_size
@@ -134,9 +177,11 @@ class Attention(nn.Module):
             concat_input = torch.cat((hidden_expanded, encoder_outputs_t), 2)
             energy = self.attention(concat_input)
             energies = torch.einsum("bsh,h->bs", energy, self.other.squeeze(0))
+            align = F.softmax(energies, dim=1)
         elif self.method == "location":
-            position_weights = self.location_layer(hidden)  # [batch_size, hidden_size]
-            energies = torch.einsum("bsh,bh->bs", encoder_outputs_t, position_weights)
+            energies = self.location_layer(hidden)  # [batch_size, hidden_size]
+            # energies = torch.einsum("bsh,bh->bs", encoder_outputs_t, position_weights)
+            align = F.softmax(energies, dim=1)
 
         # Apply temperature scaling
         # energies = F.softmax(energies, dim=1)
@@ -144,20 +189,6 @@ class Attention(nn.Module):
         # attention_weights = F.softmax(energies, dim=1).unsqueeze(1)
 
         if self.local == "local-m":
-            pt = torch.full(
-                (batch_size,), decoder_step, dtype=torch.float, device=hidden.device
-            )  # [batch_size]
-
-            window_mask = torch.zeros_like(energies)  # [batch_size, seq_len]
-
-            # ✅ 벡터화된 윈도우 마스킹
-            positions = torch.arange(
-                seq_len, dtype=torch.float, device=hidden.device
-            )  # [seq_len]
-            positions = positions.unsqueeze(0).expand(
-                batch_size, -1
-            )  # [batch_size, seq_len]
-            pt_expanded = pt.unsqueeze(1)  # [batch_size, 1]
             # 윈도우 내부는 1, 외부는 0
             window_mask = (
                 torch.abs(positions - pt_expanded) <= self.window_size
@@ -171,34 +202,16 @@ class Attention(nn.Module):
             # energies = energies.masked_fill(window_mask == 0, float("-inf"))
 
         elif self.local == "local-p":
-            # softmax
-            tanh_output = torch.tanh(self.Wp(hidden))  # [batch_size, hidden_size]
-            sigmoid_input = torch.matmul(tanh_output, self.vp).squeeze(
-                -1
-            )  # [batch_size]
-            pt = seq_len * torch.sigmoid(sigmoid_input)  # [batch_size]
-            # Create position matrix [batch_size, seq_len]
-            positions = torch.arange(seq_len, dtype=torch.float, device=hidden.device)
-            positions = positions.unsqueeze(0).expand(
-                batch_size, -1
-            )  # [batch_size, seq_len]
-            pt_expanded = pt.unsqueeze(1)  # [batch_size, 1]
 
             # Vectorized Gaussian calculation
             D = self.window_size
             gaussian_weights = torch.exp(
                 -((positions - pt_expanded) ** 2) / (2 * (D / 2) ** 2)
             )  # [batch_size, seq_len]
+            align_vector = align * gaussian_weights  # [batch_size, seq_len]
 
-            window_mask = (
-                torch.abs(positions - pt_expanded) <= self.window_size
-            ).float()  # [batch_size, seq_len]
+            return align_vector
 
-            attention_weights = F.softmax(energies, dim=1).unsqueeze(1)
-            attention_weights = attention_weights.masked_fill(
-                window_mask.unsqueeze(1) < 0.5, 0.0
-            )
-            return attention_weights * gaussian_weights.unsqueeze(1)
             # Apply Gaussian weighting
             # energies = energies * gaussian_weights
             # energies = energies + torch.log(gaussian_weights + 1e-8)
