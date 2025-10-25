@@ -9,7 +9,7 @@
 
 python ./src/eval.py \
     --run_id 17 \
-    --attn_model location \
+    --attn_model general \
     --embedding_size 1000 \
     --hidden_size 1000 \
     --n_layers 4 \
@@ -17,11 +17,12 @@ python ./src/eval.py \
     --language de \
     --input_file ./rewrite/test.14.en \
     --input_ref_file ./rewrite/test.14.de \
-    --output_file test.14.hypothesis.id=16.de \
+    --output_file test.14.hypothesis.id=17.de \
     --max_len 50 \
     --beam_size 12 \
     --batch_size 1 \
     --device cuda \
     --seed 19 \
     --reverse True \
-    --input_forward True
+    --input_forward True \
+    --local local-p
