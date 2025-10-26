@@ -160,7 +160,7 @@ class Attention(nn.Module):
             sigmoid_input = torch.matmul(tanh_output, self.vp).squeeze(
                 -1
             )  # [batch_size]
-            pt = (seq_len - 1) * torch.sigmoid(sigmoid_input) + 1  # [batch_size]
+            pt = seq_len * torch.sigmoid(sigmoid_input)  # [batch_size]
             # print(f"pt: {pt.shape}", file=sys.stderr)  # Debugging line
             pt_expanded = pt.unsqueeze(1)  # [batch_size, 1]
             # print(
@@ -200,7 +200,9 @@ class Attention(nn.Module):
             # transformed = self.attention(encoder_outputs_t)
             # energies = torch.bmm(transformed, hidden.unsqueeze(2)).squeeze(2)
             transformed_hidden = self.attention(hidden)  # [batch_size, hidden_size]
-            energies = torch.einsum("bsh,bh->bs", encoder_outputs_t, transformed_hidden)
+            energies = torch.einsum(
+                "bsh,bh->bs", encoder_outputs_t, transformed_hidden
+            )  # [batch, seq_len, hidden_size] * [batch, hidden_size] -> [batch, seq_len]
             # align = F.softmax(energies, dim=1)
         elif self.method == "concat":
             hidden_expanded = hidden.unsqueeze(1).expand(
