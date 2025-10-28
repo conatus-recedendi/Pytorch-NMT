@@ -26,11 +26,11 @@ def matlab_grad_clip(
 
     MATLAB 코드와 동일한 로직:
     gradNorm = computeGradNorm(grad, batchSize, varsDenseUpdate);
-    scale = 1.0/batchSize;  # 이미 loss에서 적용됨
     if gradNorm > maxGradNorm
-        scale = scale*maxGradNorm/gradNorm;
+        current_lr = lr * maxGradNorm / (gradNorm * batchSize);
+    else
+        current_lr = lr / batchSize;
     end
-    scaleLr = lr*scale;
     """
     # 모든 파라미터의 gradient norm 계산
     total_norm = 0
@@ -42,15 +42,17 @@ def matlab_grad_clip(
             total_norm += param_norm.item() ** 2
     total_norm = total_norm**0.5
 
-    # MATLAB 스타일 gradient clipping (loss에서 이미 1/batchSize 적용됨)
-    # 따라서 여기서는 gradNorm > maxGradNorm일 때만 추가 스케일링
+    # MATLAB 스타일 learning rate 조정
     if total_norm > max_grad_norm:
-        scale = max_grad_norm / total_norm  # maxGradNorm/gradNorm
+        current_lr = lr * max_grad_norm / (total_norm * batch_size)
+    else:
+        current_lr = lr / batch_size
 
-        # Gradient에 추가 스케일 적용
-        for p in all_params:
-            if p.grad is not None:
-                p.grad.data.mul_(scale)
+    # Learning rate 업데이트
+    for param_group in encoder_opt.param_groups:
+        param_group["lr"] = current_lr
+    for param_group in decoder_opt.param_groups:
+        param_group["lr"] = current_lr
 
     return total_norm
 
@@ -404,7 +406,7 @@ def train(
     # Backpropagation
     if scaler is not None:
         # MATLAB 스타일: loss를 batch_size로 나누기 (MATLAB의 scale = 1.0/batchSize)
-        loss = loss / batch_size
+        loss = loss
         scaler.scale(loss).backward()
         # Apply gradient clipping before stepping
         scaler.unscale_(encoder_opt)
@@ -418,12 +420,11 @@ def train(
         scaler.update()
     else:
         # MATLAB 스타일: loss를 batch_size로 나누기 (MATLAB의 scale = 1.0/batchSize)
-        loss = loss / batch_size
-        loss.backward()
-        # MATLAB 스타일 gradient clipping 적용
         grad_norm = matlab_grad_clip(
             encoder, decoder, encoder_opt, decoder_opt, args.clip, batch_size, lr
         )
+        loss.backward()
+        # MATLAB 스타일 gradient clipping 적용
         encoder_opt.step()
         decoder_opt.step()
     # Check for NaN
