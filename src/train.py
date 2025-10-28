@@ -22,8 +22,16 @@ max_len = 50
 def matlab_grad_clip(
     encoder, decoder, encoder_opt, decoder_opt, max_grad_norm, batch_size, lr
 ):
-    """MATLAB 스타일의 gradient clipping"""
+    """MATLAB 스타일의 gradient clipping
 
+    MATLAB 코드와 동일한 로직:
+    gradNorm = computeGradNorm(grad, batchSize, varsDenseUpdate);
+    scale = 1.0/batchSize;  # 이미 loss에서 적용됨
+    if gradNorm > maxGradNorm
+        scale = scale*maxGradNorm/gradNorm;
+    end
+    scaleLr = lr*scale;
+    """
     # 모든 파라미터의 gradient norm 계산
     total_norm = 0
     all_params = list(encoder.parameters()) + list(decoder.parameters())
@@ -34,15 +42,15 @@ def matlab_grad_clip(
             total_norm += param_norm.item() ** 2
     total_norm = total_norm**0.5
 
-    # MATLAB 스타일 스케일링
-    scale = 1.0 / batch_size
+    # MATLAB 스타일 gradient clipping (loss에서 이미 1/batchSize 적용됨)
+    # 따라서 여기서는 gradNorm > maxGradNorm일 때만 추가 스케일링
     if total_norm > max_grad_norm:
-        scale = scale * max_grad_norm / total_norm
+        scale = max_grad_norm / total_norm  # maxGradNorm/gradNorm
 
-    # Gradient에 스케일 적용
-    for p in all_params:
-        if p.grad is not None:
-            p.grad.data.mul_(scale * batch_size)  # batch_size로 복원
+        # Gradient에 추가 스케일 적용
+        for p in all_params:
+            if p.grad is not None:
+                p.grad.data.mul_(scale)
 
     return total_norm
 
@@ -364,7 +372,9 @@ def train(
         valid_tokens = 0
         for di in range(target_length):
             decoder_output, decoder_context, decoder_hidden, decoder_attention = (
-                decoder(decoder_input, decoder_context, decoder_hidden, encoder_outputs)
+                decoder(
+                    decoder_input, decoder_context, decoder_hidden, encoder_outputs, di
+                )
             )
             target_di = target[:, di].squeeze()
             non_pad_mask = target_di != 2  # PAD token = 2
@@ -393,19 +403,24 @@ def train(
 
     # Backpropagation
     if scaler is not None:
+        # MATLAB 스타일: loss를 batch_size로 나누기 (MATLAB의 scale = 1.0/batchSize)
+        loss = loss / batch_size
         scaler.scale(loss).backward()
         # Apply gradient clipping before stepping
         scaler.unscale_(encoder_opt)
         scaler.unscale_(decoder_opt)
-        nn.utils.clip_grad_norm_(encoder.parameters(), args.clip)
-        nn.utils.clip_grad_norm_(decoder.parameters(), args.clip)
+        # MATLAB 스타일 gradient clipping 적용
+        grad_norm = matlab_grad_clip(
+            encoder, decoder, encoder_opt, decoder_opt, args.clip, batch_size, lr
+        )
         scaler.step(encoder_opt)
         scaler.step(decoder_opt)
         scaler.update()
     else:
+        # MATLAB 스타일: loss를 batch_size로 나누기 (MATLAB의 scale = 1.0/batchSize)
+        loss = loss / batch_size
         loss.backward()
-        # nn.utils.clip_grad_norm_(encoder.parameters(), args.clip)
-        # nn.utils.clip_grad_norm_(decoder.parameters(), args.clip)
+        # MATLAB 스타일 gradient clipping 적용
         grad_norm = matlab_grad_clip(
             encoder, decoder, encoder_opt, decoder_opt, args.clip, batch_size, lr
         )
