@@ -424,10 +424,14 @@ def train(
         #     encoder, decoder, encoder_opt, decoder_opt, args.clip, batch_size, lr
         # )
         loss.backward()
-        nn.grad.utils.clip_grad_norm_(
+        torch.nn.utils.clip_grad_norm_(
             list(encoder.parameters()) + list(decoder.parameters()),
             max_norm=args.clip,
         )
+        # nn.grad.utils.clip_grad_norm_(
+        #     list(encoder.parameters()) + list(decoder.parameters()),
+        #     max_norm=args.clip,
+        # )
         # MATLAB 스타일 gradient clipping 적용
         encoder_opt.step()
         decoder_opt.step()
