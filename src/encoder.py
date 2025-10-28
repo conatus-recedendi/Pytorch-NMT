@@ -82,7 +82,7 @@ class EncoderRNN(nn.Module):
                 ),
             )
             # # Apply gradient norm clipping
-            # torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=50.0)
+            torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=50.0)
 
         return output, hidden_state  # [seq_len, batch, hidden_size]
 

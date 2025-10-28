@@ -97,18 +97,22 @@ class Attention(nn.Module):
                 batch_size, self.seq_len, hidden_size
             )
             concat_input = torch.cat((hidden_expanded, encoder_outputs_t), 2)
-            energy = self.attention(concat_input)  # [batch_size, seq_len, hidden_size]
-            energies = torch.einsum("bsh,h->bs", energy, self.other.squeeze(0))
+            position_weights = self.attention(
+                concat_input
+            )  # [batch_size, seq_len, hidden_size]
+            energies = torch.einsum(
+                "bsh,h->bs", position_weights, self.other.squeeze(0)
+            )
 
         elif self.method == "location":
             # ✅ Dynamic location attention (no fixed max_seq_len)
             # Use linear layer to generate position-dependent weights
             # position_weights = self.location_layer(hidden)  # [batch_size, hidden_size]
             # energies = torch.einsum("bsh,bh->bs", encoder_outputs_t, position_weights)
-            energies = self.location_layer(hidden)  # [batch_size, hidden_size]
+            position_weights = self.location_layer(hidden)  # [batch_size, hidden_size]
 
         # Apply temperature scaling for numerical stability
-        energies = energies / math.sqrt(self.hidden_size)
+        energies = energies
 
         return (
             F.softmax(energies, dim=1).unsqueeze(1),
