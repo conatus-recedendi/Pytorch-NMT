@@ -420,8 +420,12 @@ def train(
         scaler.update()
     else:
         # MATLAB 스타일: loss를 batch_size로 나누기 (MATLAB의 scale = 1.0/batchSize)
-        grad_norm = matlab_grad_clip(
-            encoder, decoder, encoder_opt, decoder_opt, args.clip, batch_size, lr
+        # grad_norm = matlab_grad_clip(
+        #     encoder, decoder, encoder_opt, decoder_opt, args.clip, batch_size, lr
+        # )
+        nn.grad.utils.clip_grad_norm_(
+            list(encoder.parameters()) + list(decoder.parameters()),
+            max_norm=args.clip,
         )
         loss.backward()
         # MATLAB 스타일 gradient clipping 적용
