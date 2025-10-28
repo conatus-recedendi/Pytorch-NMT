@@ -19,6 +19,34 @@ import torch.nn.functional as F
 max_len = 50
 
 
+def matlab_grad_clip(
+    encoder, decoder, encoder_opt, decoder_opt, max_grad_norm, batch_size, lr
+):
+    """MATLAB 스타일의 gradient clipping"""
+
+    # 모든 파라미터의 gradient norm 계산
+    total_norm = 0
+    all_params = list(encoder.parameters()) + list(decoder.parameters())
+
+    for p in all_params:
+        if p.grad is not None:
+            param_norm = p.grad.data.norm(2)
+            total_norm += param_norm.item() ** 2
+    total_norm = total_norm**0.5
+
+    # MATLAB 스타일 스케일링
+    scale = 1.0 / batch_size
+    if total_norm > max_grad_norm:
+        scale = scale * max_grad_norm / total_norm
+
+    # Gradient에 스케일 적용
+    for p in all_params:
+        if p.grad is not None:
+            p.grad.data.mul_(scale * batch_size)  # batch_size로 복원
+
+    return total_norm
+
+
 def pad_sequences_pre(sequences, maxlen, padding_value=0):
     """
     pad_sequences와 동일하지만 앞쪽(pre)에 padding을 붙입니다.
@@ -150,7 +178,7 @@ def calculate_perplexity(encoder, decoder, test_pairs, criterion, device):
 
     with torch.no_grad():
         # 배치 처리를 위해 패딩
-        batch_size = 32  # 메모리 고려해서 작은 배치 사용
+        batch_size = args.batch_size  # 메모리 고려해서 작은 배치 사용
         # batch_size = 1
 
         for i in range(0, len(test_pairs), batch_size):
@@ -376,8 +404,11 @@ def train(
         scaler.update()
     else:
         loss.backward()
-        encoder_grad_norm = nn.utils.clip_grad_norm_(encoder.parameters(), args.clip)
-        decoder_grad_norm = nn.utils.clip_grad_norm_(decoder.parameters(), args.clip)
+        # nn.utils.clip_grad_norm_(encoder.parameters(), args.clip)
+        # nn.utils.clip_grad_norm_(decoder.parameters(), args.clip)
+        grad_norm = matlab_grad_clip(
+            encoder, decoder, encoder_opt, decoder_opt, args.clip, batch_size, lr
+        )
         encoder_opt.step()
         decoder_opt.step()
     # Check for NaN
