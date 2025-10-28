@@ -149,9 +149,9 @@ class ClippedLSTM(nn.Module):
         output = torch.clamp(output, -self.clip_forward, self.clip_forward)
 
         # Apply gradient norm clipping during training
-        if self.training:
-            torch.nn.utils.clip_grad_norm_(
-                self.parameters(), max_norm=self.clip_backward
-            )
+        # if self.training:
+        #     torch.nn.utils.clip_grad_norm_(
+        #         self.parameters(), max_norm=self.clip_backward
+        # )
 
         return output, final_hidden
