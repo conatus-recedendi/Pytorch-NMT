@@ -130,7 +130,7 @@ class Attention(nn.Module):
         )  # [batch_size, seq_len, hidden_size]
 
         # Position Information
-        positions = torch.arange(seq_len, dtype=torch.float, device=hidden.device)
+        positions = torch.arange(seq_len, dtype=torch.float, device=hidden.device) # []
         positions = positions.unsqueeze(0).expand(
             batch_size, -1
         )  # [batch_size, seq_len]
