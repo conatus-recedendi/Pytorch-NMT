@@ -9,7 +9,7 @@
 
 python ./src/eval.py \
     --run_id 21 \
-    --attn_model dot \
+    --attn_model general \
     --embedding_size 1000 \
     --hidden_size 1000 \
     --n_layers 4 \
