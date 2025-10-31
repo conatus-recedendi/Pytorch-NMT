@@ -67,13 +67,13 @@ class ClippedLSTM(nn.Module):
             )
 
         # Register hooks for backward clipping
-        for name, param in self.named_parameters():
-            if "weight" in name or "bias" in name:
-                param.register_hook(
-                    lambda grad: torch.clamp(
-                        grad, -self.clip_backward, self.clip_backward
-                    )
-                )
+        # for name, param in self.named_parameters():
+        #     if "weight" in name or "bias" in name:
+        #         param.register_hook(
+        #             lambda grad: torch.clamp(
+        #                 grad, -self.clip_backward, self.clip_backward
+        #             )
+        # )
 
     def forward(self, input, hidden=None):
         if self.input_forward and self.num_layers > 1:
@@ -120,8 +120,8 @@ class ClippedLSTM(nn.Module):
 
                 # Apply forward clipping
                 h, c = new_layer_hidden
-                h = torch.clamp(h, -self.clip_forward, self.clip_forward)
-                c = torch.clamp(c, -self.clip_forward, self.clip_forward)
+                # h = torch.clamp(h, -self.clip_forward, self.clip_forward)
+                # c = torch.clamp(c, -self.clip_forward, self.clip_forward)
                 new_layer_hidden = (h, c)
                 new_hidden_states.append(new_layer_hidden)
 
@@ -141,12 +141,12 @@ class ClippedLSTM(nn.Module):
             # Apply forward clipping to hidden states
             if isinstance(final_hidden, tuple):  # LSTM returns (h, c)
                 h, c = final_hidden
-                h = torch.clamp(h, -self.clip_forward, self.clip_forward)
-                c = torch.clamp(c, -self.clip_forward, self.clip_forward)
+                # h = torch.clamp(h, -self.clip_forward, self.clip_forward)
+                # c = torch.clamp(c, -self.clip_forward, self.clip_forward)
                 final_hidden = (h, c)
 
         # Apply forward clipping to output
-        output = torch.clamp(output, -self.clip_forward, self.clip_forward)
+        # output = torch.clamp(output, -self.clip_forward, self.clip_forward)
 
         # Apply gradient norm clipping during training
         # if self.training:

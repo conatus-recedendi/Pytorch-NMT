@@ -87,7 +87,12 @@ class AttentionDecoderRNN(nn.Module):
         print(f"AttentionDecoder: Initialized all parameters with U[-0.1, 0.1]")
 
     def forward(
-        self, input, decoder_context, hidden_state, encoder_outputs, decoder_step
+        self,
+        input,
+        decoder_context,
+        hidden_state,
+        encoder_outputs,
+        decoder_step,
     ):
 
         # Run through RNN
@@ -109,17 +114,17 @@ class AttentionDecoderRNN(nn.Module):
             rnn_input, hidden_state
         )  # rnn_output: [1, batch, hidden_size]
 
-        if self.clip_forward is not None:
-            # LSTM hidden_state is (hidden, cell) tuple
-            # Apply clipping to both hidden state and cell state
-            hidden_state = (
-                torch.clamp(
-                    hidden_state[0], min=-self.clip_forward, max=self.clip_forward
-                ),
-                torch.clamp(
-                    hidden_state[1], min=-self.clip_forward, max=self.clip_forward
-                ),
-            )
+        # if self.clip_forward is not None:
+        # LSTM hidden_state is (hidden, cell) tuple
+        # Apply clipping to both hidden state and cell state
+        # hidden_state = (
+        #     torch.clamp(
+        #         hidden_state[0], min=-self.clip_forward, max=self.clip_forward
+        #     ),
+        #     torch.clamp(
+        #         hidden_state[1], min=-self.clip_forward, max=self.clip_forward
+        #     ),
+        # )
 
         # Calculate attention
         if self.attn_model == "base":
